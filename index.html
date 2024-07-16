@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Budget</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="" />
+  <link rel="stylesheet" href="style.css">
+  <script src="budget.js"></script>
+</head>
+
+<body>
+  <h1>Bucket Budget with Ledger</h1>
+  <!-- 
+  import button
+    budget file (Budget object as JSON)
+  export button
+    budget file
+    csv file
+  buckets section
+      current buckets with current value
+      ability to edit/remove existing and add new buckets
+  ledger section
+      add transaction
+          date, bucket, description, amount
+      editable list of previous transactions
+          also lists bucket value before and after transaction
+  stretch goal: monthly and yearly insights
+  -->
+  <h2>Buckets</h2>
+  <div id="bucket-section">
+    <div id="new-bucket">
+      <p>Add New Bucket Name:</p>
+      <input id="new-bucket-name" type="text" placeholder="Bucket Name">
+      <button id="new-bucket-submit" onclick="addBucket()">Add Bucket</button>
+    </div>
+    <br>
+    <table id="bucket-table">
+      <tr>
+        <th>Bucket</th>
+        <th>Value</th>
+      </tr>
+    </table>
+  </div>
+
+  <h2>Ledger</h2>
+  <div id="ledger-section">
+    <div id="new-transaction">
+      <p>Add New Transaction:</p>
+      <input id="date-input" type="date" autocomplete="date">
+      <select id="bucket-input" >
+        <option value="" disabled selected>Select a bucket</option>
+      </select>
+      <input id="desc-input" type="text" maxlength="128" placeholder="Describe the transaction">
+      <span>$<input id="value-input" type="number" step="0.01" placeholder="Value (+ or -)"></span>
+      <button id="new-transaction-submit" onclick="addTransaction()">Add Transaction</button>  
+    </div>
+    <br>
+    <table id="ledger-table">
+      <tr>
+        <th>Date</th>
+        <th>Bucket</th>
+        <th>Description</th>
+        <th>Value</th>
+        <th>Bucket Value Before</th>
+        <th>Bucket Value After</th>
+      </tr>
+    </table>
+  </div>
+
+</body>
+
+</html>
