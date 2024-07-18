@@ -51,33 +51,23 @@ class TransactionList {
 
 class Ledger {
   constructor() {
-    this.transaction_lists = {};
-    // Dictionary of transaction_id to bucket and bucket_transaction_id
-    this.page_table = {};
+    this.transactions = {};
     this.id_counter = 0;
   }
 
   addTransaction(transaction) {
-    // If list for this bucket's transactions doesnt exist, make it
-    if(this.transaction_lists[transaction.bucket] == null) {
-      this.transaction_lists[transaction.bucket] = new TransactionList();
-    }
-
-    // Set up page table entry and add to bucket transactions
-    var bt_id = this.transaction_lists[transaction.bucket].addTransaction(transaction);
-    this.page_table[this.id_counter] = [transaction.bucket,bt_id];
+    var ledger_id = "_"+transaction.id;
+    this.transactions[ledger_id] = transaction;
 
     // Update ledger id counter
     this.id_counter++;
   }
 
   removeTransaction(ledger_id) {
-    // Remove transaction from its bucket
-    var page = this.page_table[ledger_id];
-    this.transaction_lists[page[0]].removeTransaction(page[1]);
+    //TODO update all transactions in the corresponding bucket
 
     // Remove page table entry
-    delete this.page_table[ledger_id];
+    delete this.transactions[ledger_id];
   }
 
   // TODO update this for page table
@@ -107,10 +97,40 @@ class Ledger {
       //Before Value change
       return false;
     }
-    this.items[ledger_id] = new_transaction;
+    this.transactions[ledger_id] = new_transaction;
     return true;
   }
 
+  // asc: true is sort should be in ascending order, false if descending
+  sortTransactions(field,asc) {
+    var existing_transactions = this.transactions;
+    switch(field) {
+      case "id":        
+        this.transactions = Object.fromEntries(
+          // (-1)^(1+asc) * a + (-1)^(asc) * b = {a-b if asc=true; b-a if asc=false}
+          Object.entries(existing_transactions).sort(function (a,b) { 
+            return Math.pow(-1,1+asc)*a[1][field] + Math.pow(-1,asc)*b[1][field];
+          })
+        );
+        break;
+      case "bucket":
+        this.transactions = Object.fromEntries(
+          Object.entries(existing_transactions).sort(function (a,b) {
+            if(a[1][field] < b[1][field]) {
+              return -1*Math.pow(-1,1+asc);
+            }
+            if(b[1][field] < a[1][field]) {
+              return 1*Math.pow(-1,1+asc);
+            }
+            return 0;
+          })
+        );
+        break;
+      //TODO sort by date
+    }
+  }
+
+  // TODO decide how important it is that if sorted by buckets, transactions are split up with bucket name changes
   updateBucketName(bucket,new_bucket_id, new_bucket_name) {
 
     // Add transaction in bucket to indicate changed name
@@ -118,25 +138,15 @@ class Ledger {
     var bucket_id = bucket_name.toLowerCase().replaceAll(" ","_");
     var bucket_val = bucket.value;
 
+    var ledger_id = "_"+this.id_counter;
     var name_change_transaction = new Transaction(
-      this.id_counter,"",bucket_id,
+      ledger_id,"",bucket_id,
       "Bucket name change from \""+bucket_name + "\" to \"" +
       new_bucket_name+"\"",0,bucket_val
     );
-    var bt_id = this.transaction_lists[bucket_id].addTransaction(name_change_transaction);
-    this.page_table[this.id_counter] = [bucket_id,bt_id];
+    this.transactions[ledger_id] = name_change_transaction;
     this.id_counter++;
-
-    // update bucket key in transaction list but keep old bucket
-    Object.defineProperty(this.transaction_lists, new_bucket_id, Object.getOwnPropertyDescriptor(this.transaction_lists, bucket_id));
-    delete this.transaction_lists[bucket_id];    
-
-    // update entries in page table
-    for(var page_id in this.page_table) {
-      if(this.page_table[page_id][0] == bucket_id) {
-        this.page_table[page_id][0] = new_bucket_id;
-      }
-    }
+    
   }
 }
 
@@ -145,6 +155,7 @@ class Budget {
     // Dictionary of bucket ids and objects
     this.buckets = {};
     this.ledger = new Ledger();
+    this.valid_sort_fields = ["id","date","bucket"];
   }
 
   addBucket(name, value) {
@@ -193,6 +204,15 @@ class Budget {
     
     this.buckets[bucket].value += value;
     this.ledger.addTransaction(transaction);
+    return true;
+  }
+
+  sortLedger(field, asc) {
+    if(!this.valid_sort_fields.includes(field)) {
+      return false;
+    }
+
+    this.ledger.sortTransactions(field, asc);
     return true;
   }
 }
@@ -272,6 +292,10 @@ function updateBucketTable() {
 
 function addBucket() {
   var new_bucket_name = document.getElementById("new-bucket-name").value;
+  if(new_bucket_name == "") {
+    alert("Please enter a name for the new bucket.");
+    return;
+  }
   var success = BUDGET.addBucket(new_bucket_name,0);
 
   // If bucket already exists, alert user
@@ -355,12 +379,11 @@ function updateLedgerTable() {
   table.appendChild(header);
 
   // Get transactions in reverse order added
-  var rev_page_ids = Object.keys(BUDGET.ledger.page_table).reverse();
+  BUDGET.sortLedger("bucket",false);
+  
   // Add transactions
-  for(var i = 0; i < rev_page_ids.length; i++) {
-    var page_id = rev_page_ids[i];
-    var page = BUDGET.ledger.page_table[page_id];
-    var transaction = BUDGET.ledger.transaction_lists[page[0]].bucket_transactions[page[1]];
+  for(var ledger_id in BUDGET.ledger.transactions) {
+    var transaction = BUDGET.ledger.transactions[ledger_id];
 
     var entry = document.createElement('tr');
 
@@ -377,7 +400,7 @@ function updateLedgerTable() {
     }
 
     var desc_entry = document.createElement('td');
-    desc_entry.setAttribute("id",page_id);
+    desc_entry.setAttribute("id",ledger_id);
     desc_entry.innerHTML = transaction.description;
 
     var value_entry = document.createElement('td');  
@@ -400,10 +423,10 @@ function updateLedgerTable() {
     // Edit and remove buttons won't show on bucket name change transactions
     if(!(transaction.date == "" && transaction.value == 0)) {
       var edit_button = document.createElement('td');
-      edit_button.innerHTML = "<button class='transaction-edit' onclick='editTransaction(\""+page_id+"\",this)'>Edit</button>"
+      edit_button.innerHTML = "<button class='transaction-edit' onclick='editTransaction(\""+ledger_id+"\",this)'>Edit</button>"
 
       var remove_button = document.createElement('td');
-      remove_button.innerHTML = "<button class='transaction-remove' onclick='removeTransaction(\""+page_id+"\")'>Remove</button>"
+      remove_button.innerHTML = "<button class='transaction-remove' onclick='removeTransaction(\""+ledger_id+"\")'>Remove</button>"
       entry.appendChild(edit_button);
       entry.appendChild(remove_button);
     }
