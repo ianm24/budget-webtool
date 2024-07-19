@@ -41,12 +41,6 @@ class TransactionList {
   removeTransaction(bucket_transaction_id) {
     delete this.bucket_transactions[bucket_transaction_id];
   }
-
-  // updateBucketName(new_bucket_id) {
-  //   for(var bt_id in this.bucket_transactions) {
-  //     this.bucket_transactions[bt_id].bucket = new_bucket_id;
-  //   }
-  // }
 }
 
 class Ledger {
@@ -63,14 +57,57 @@ class Ledger {
     this.id_counter++;
   }
 
+  // Returns the new bucket value after updating all ledger transactions in the removed transaction's bucket
   removeTransaction(ledger_id) {
     //TODO update all transactions in the corresponding bucket
+    var transaction = this.transactions[ledger_id];
+    var target_bucket = transaction.bucket;
 
-    // Remove page table entry
+    // get the transaction in this bucket before this and note its bucket after
+    var ledger_ids = Object.keys(this.transactions);
+    var ledger_id_key_idx = ledger_ids.indexOf(ledger_id);
+
+    // If a previous transaction in this bucket isn't found, this is the first
+    var before_id = ledger_id;
+    var new_bucket_before = 0;
+
+    // Assumes ledger is sorted by id in descending order
+    for(var i = ledger_id_key_idx+1; i < ledger_ids.length; i++) {
+      var curr_ledger_id = ledger_ids[i];
+      var transaction = this.transactions[curr_ledger_id];
+
+      if(transaction.bucket == target_bucket) {
+        before_id = curr_ledger_id;
+        new_bucket_before = transaction.bucket_after;
+        break;
+      }
+    }
+    
+    // Get the transaction in this bucket after this and set its before to the other's after
+    var after_id = ledger_id;
+    
+    // Assumes ledger is sorted by id in descending order
+    for(var i = ledger_id_key_idx-1; i > 0; i--) {
+      var curr_ledger_id = ledger_ids[i];
+      var transaction = this.transactions[curr_ledger_id];
+
+      if(transaction.bucket == target_bucket) {
+        after_id = curr_ledger_id;
+        transaction.bucket_before = new_bucket_before;
+        break;
+      }
+    }
+    
+    // update the rest of the transactions in this bucket
+    var new_bucket_val = this.updateLedger(after_id);
+
+    // Delete transaction
     delete this.transactions[ledger_id];
+
+    //return the new value of the bucket
+    return new_bucket_val;
   }
 
-  // TODO update this for page table
   editTransaction(ledger_id, new_transaction) {
     var old_transaction = this.items[ledger_id];
     if(new_transaction.bucket != old_transaction.bucket ||
@@ -102,7 +139,7 @@ class Ledger {
   }
 
   // asc: true is sort should be in ascending order, false if descending
-  sortTransactions(field,asc) {
+  sortLedger(field,asc) {
     var existing_transactions = this.transactions;
     switch(field) {
       case "id":        
@@ -130,7 +167,33 @@ class Ledger {
     }
   }
 
-  // TODO decide how important it is that if sorted by buckets, transactions are split up with bucket name changes
+  // Returns the new bucket value after updating all ledger transactions in that bucket
+  updateLedger(ledger_id) {
+    // Starting at ledger_id, update every transaction in that bucket with new bucket_before
+    var transaction = this.transactions[ledger_id];
+    var target_bucket = transaction.bucket;
+    var curr_bucket_before = transaction.bucket_before;
+    var curr_bucket_val = 0;
+
+    var ledger_ids = Object.keys(this.transactions);
+    // Assumes ledger is sorted by id in descending order
+    for(var i = ledger_ids.indexOf(ledger_id); i >= 0; i--) {
+      var curr_ledger_id = ledger_ids[i];
+      var transaction = this.transactions[curr_ledger_id];
+      
+      if(transaction.bucket != target_bucket) {
+        continue;
+      }
+
+      transaction.bucket_before = curr_bucket_before;
+      transaction.bucket_after = transaction.bucket_before + transaction.value;
+      curr_bucket_before = transaction.bucket_after;
+      curr_bucket_val = transaction.bucket_after;
+    }
+
+    return curr_bucket_val;
+  }
+
   updateBucketName(bucket,new_bucket_id, new_bucket_name) {
 
     // Add transaction in bucket to indicate changed name
@@ -140,13 +203,20 @@ class Ledger {
 
     var ledger_id = "_"+this.id_counter;
     var name_change_transaction = new Transaction(
-      ledger_id,"",bucket_id,
+      ledger_id,"",new_bucket_id,
       "Bucket name change from \""+bucket_name + "\" to \"" +
       new_bucket_name+"\"",0,bucket_val
     );
     this.transactions[ledger_id] = name_change_transaction;
     this.id_counter++;
     
+    // Update all transactions in the old bucket to the new bucket name
+    for(var ledger_id in this.transactions) {
+      var transaction = this.transactions[ledger_id];
+      if(transaction.bucket == bucket_id) {
+        transaction.bucket = new_bucket_id;
+      }
+    }
   }
 }
 
@@ -156,6 +226,8 @@ class Budget {
     this.buckets = {};
     this.ledger = new Ledger();
     this.valid_sort_fields = ["id","date","bucket"];
+    this.sort_field = "id";
+    this.sort_dir_asc = false;
   }
 
   addBucket(name, value) {
@@ -207,12 +279,37 @@ class Budget {
     return true;
   }
 
-  sortLedger(field, asc) {
-    if(!this.valid_sort_fields.includes(field)) {
-      return false;
+  removeTransaction(transaction_id) {
+    var transaction = this.ledger.transactions[transaction_id];
+    var target_bucket = transaction.bucket;
+
+    if(this.sort_field == "id" && this.sort_dir_asc == false) {
+      this.buckets[target_bucket].value = this.ledger.removeTransaction(transaction_id);
+      return true;
     }
 
-    this.ledger.sortTransactions(field, asc);
+    // If needed, sort ledger by descending id before removal then use previous sort method after
+    var curr_sort_field = this.sort_field;
+    var curr_sort_dir_asc = this.sort_dir_asc;
+    this.sort_field = "id";
+    this.sort_dir_asc = false;
+
+    // Yes I know sorting twice is inefficient but for the scale of a personal budget,
+    // It shouldn't affect performance too much (my current paper ledger has ~5000 entries for the past 5 years)
+    this.sortLedger();
+    this.buckets[target_bucket].value = this.ledger.removeTransaction(transaction_id);
+
+    this.sort_field = curr_sort_field;
+    this.sort_dir_asc = curr_sort_dir_asc;
+    this.sortLedger();
+    return true;
+  }
+
+  sortLedger() {
+    // if(!this.valid_sort_fields.includes(field)) {
+    //   return false;
+    // }
+    this.ledger.sortLedger(this.sort_field, this.sort_dir_asc);
     return true;
   }
 }
@@ -220,6 +317,8 @@ class Budget {
 // ==================
 // FUNCTIONS FOR HTML
 // ==================
+
+//TODO allow user to import and export data
 
 var BUDGET = new Budget();
 //TODO add customizable formatters for different currencies
@@ -360,7 +459,7 @@ function confirmBucketEdit(bucket_id,confirm_button) {
   updateLedgerTable();
 }
 
-// TODO have it display in reverse adding order within date value
+// TODO have a way for user to decide between sorting by id, date, bucket in asc or desc
 function updateLedgerTable() {
   // Empty table
   var table = document.getElementById("ledger-table");
@@ -379,7 +478,7 @@ function updateLedgerTable() {
   table.appendChild(header);
 
   // Get transactions in reverse order added
-  BUDGET.sortLedger("bucket",false);
+  BUDGET.sortLedger();
   
   // Add transactions
   for(var ledger_id in BUDGET.ledger.transactions) {
@@ -461,6 +560,7 @@ function addTransaction() {
     alert("Please add a description for the transaction");
     return;
   }
+  //TODO check if transaction value is too large for js number
   if(transaction_value == "") {
     alert("Please add a numeric value for the transaction");
     return;
@@ -479,7 +579,14 @@ function addTransaction() {
 
 // TODO
 function removeTransaction(transaction_id) {
-  
+  // Remove transaction
+  BUDGET.removeTransaction(transaction_id);
+
+  // Propogate changes to visual ledger
+  updateLedgerTable();
+
+  // Propogate changes to bucket table
+  updateBucketTable();
 }
 
 // TODO
