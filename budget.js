@@ -59,7 +59,7 @@ class Ledger {
 
   // Returns the new bucket value after updating all ledger transactions in the removed transaction's bucket
   removeTransaction(ledger_id) {
-    //TODO update all transactions in the corresponding bucket
+    // Update all transactions in the corresponding bucket
     var transaction = this.transactions[ledger_id];
     var target_bucket = transaction.bucket;
 
@@ -163,7 +163,14 @@ class Ledger {
           })
         );
         break;
-      //TODO sort by date
+      case "date":
+        this.transactions = Object.fromEntries(
+          Object.entries(existing_transactions).sort(function (a,b) {
+            var date_a = new Date(a[1][field]);
+            var date_b = new Date(b[1][field]);
+            return Math.pow(-1,1+asc)*date_a + Math.pow(-1,asc)*date_b;
+          })
+        );
     }
   }
 
@@ -560,9 +567,12 @@ function addTransaction() {
     alert("Please add a description for the transaction");
     return;
   }
-  //TODO check if transaction value is too large for js number
   if(transaction_value == "") {
     alert("Please add a numeric value for the transaction");
+    return;
+  } else if (transaction_value > Number.MAX_SAFE_INTEGER) {
+    alert("You have added a transaction with a value higher than JavaScript "+
+      "can handle without precision errors. Please use a smaller value.");
     return;
   }
   
@@ -577,7 +587,6 @@ function addTransaction() {
   updateBucketTable();
 }
 
-// TODO
 function removeTransaction(transaction_id) {
   // Remove transaction
   BUDGET.removeTransaction(transaction_id);
