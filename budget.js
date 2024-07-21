@@ -26,23 +26,6 @@ class Transaction {
     }
 }
 
-class TransactionList {
-  constructor() {
-    this.bucket_transaction_id = 0;
-    this.bucket_transactions = {};
-  }
-
-  addTransaction(transaction) {
-    this.bucket_transactions[this.bucket_transaction_id] = transaction;
-    this.bucket_transaction_id++;
-    return this.bucket_transaction_id - 1;
-  }
-
-  removeTransaction(bucket_transaction_id) {
-    delete this.bucket_transactions[bucket_transaction_id];
-  }
-}
-
 class Ledger {
   constructor() {
     this.transactions = {};
