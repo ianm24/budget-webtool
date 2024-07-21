@@ -1,6 +1,8 @@
 //===========================
 // BACKEND CLASSES/FUNCTIONS
 //===========================
+
+//===Start Budget Classes===
 class Bucket {
   constructor(display_name,value) {
     this.display_name = display_name;
@@ -303,12 +305,25 @@ class Budget {
     return true;
   }
 }
+//===End Budget Classes===
+
+// ===Start File Export Functions===
+var dataFile = null;
+function exportJSON(budget) {
+  const data = new Blob([JSON.stringify(budget)], {type: "application/json"});
+
+  // If replacing previous file, revoke object URL to avoid memory leaks
+  if (dataFile !== null) {
+    window.URL.revokeObjectURL(dataFile);
+  }
+
+  dataFile = window.URL.createObjectURL(data);
+}
+// ===End File Export Functions===
 
 // ==================
 // FUNCTIONS FOR HTML
 // ==================
-
-//TODO allow user to import and export data
 
 var BUDGET = new Budget();
 //TODO add customizable formatters for different currencies
@@ -316,6 +331,33 @@ const formatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD'
 });
+
+//TODO allow user to import data
+//https://www.freecodecamp.org/news/upload-files-with-javascript/
+function importData(filetype) {
+  switch(filetype) {
+    case 'json':
+      
+      break;
+    // TODO allow csv import
+  }
+}
+
+function exportData(filetype) {
+  // Set object URL for the current budget
+  switch(filetype) {
+    case 'json':
+      exportJSON(BUDGET);
+      break;
+    // TODO allow csv export
+  }
+
+  // Click the object URL link to download
+  var link = document.createElement('a');
+  link.setAttribute('download', 'budget.'+filetype);
+  link.href = dataFile;
+  link.click();
+}
 
 function updateBucketTable() {
   // Empty table
