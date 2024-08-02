@@ -12,7 +12,15 @@
 
 <body>
   <h1>Bucket Budget with Ledger</h1>
-  <button id="export-js" onclick="exportData('json')">Export to JSON</button>
+
+  <div id="data-operations">
+    <h3>Import Data</h3>
+    JSON Data File: <input type="file" id="data-upload" name="data-upload">
+    <button id="data-submit" onclick="importData()">Import File</button>
+
+    <h3>Export Data</h3>
+    <button id="data-export-js" onclick="exportData('json')">Export to JSON</button>
+  </div>  
   <!-- 
   import button
     budget file (Budget object as JSON)

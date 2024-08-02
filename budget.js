@@ -6,11 +6,12 @@
 class Bucket {
   constructor(display_name,value) {
     this.display_name = display_name;
-    this.value = value;
+    this.value = Number(value.toFixed(2));
   }
 
   modifyValue(value_modifier) {
-    this.value += value_modifier;
+    var new_val = Number((this.value + value_modifier).toFixed(2));
+    this.value = new_val;
   }
 }
 
@@ -22,9 +23,9 @@ class Transaction {
       this.date = date;
       this.bucket = bucket;
       this.description = description;
-      this.value = value;
-      this.bucket_before = bucket_before;
-      this.bucket_after = this.bucket_before + this.value;
+      this.value = Number(value.toFixed(2));
+      this.bucket_before = Number(bucket_before.toFixed(2));
+      this.bucket_after = Number((this.bucket_before + this.value).toFixed(2));
     }
 }
 
@@ -124,6 +125,7 @@ class Ledger {
   }
 
   // asc: true is sort should be in ascending order, false if descending
+  // First sorts by the chosen field, then by transaction ID
   sortLedger(field,asc) {
     var existing_transactions = this.transactions;
     switch(field) {
@@ -138,11 +140,14 @@ class Ledger {
       case "bucket":
         this.transactions = Object.fromEntries(
           Object.entries(existing_transactions).sort(function (a,b) {
+            var id_sort_val = Math.pow(-1,1+asc)*a[1]["id"] + Math.pow(-1,asc)*b[1]["id"];
             if(a[1][field] < b[1][field]) {
-              return -1*Math.pow(-1,1+asc);
+              var bucket_sort_val = -1*Math.pow(-1,1+asc);
+              return bucket_sort_val + id_sort_val;
             }
             if(b[1][field] < a[1][field]) {
-              return 1*Math.pow(-1,1+asc);
+              var bucket_sort_val = 1*Math.pow(-1,1+asc);
+              return bucket_sort_val + id_sort_val;
             }
             return 0;
           })
@@ -153,7 +158,9 @@ class Ledger {
           Object.entries(existing_transactions).sort(function (a,b) {
             var date_a = new Date(a[1][field]);
             var date_b = new Date(b[1][field]);
-            return Math.pow(-1,1+asc)*date_a + Math.pow(-1,asc)*date_b;
+            var date_sort_val = Math.pow(-1,1+asc)*date_a + Math.pow(-1,asc)*date_b;
+            var id_sort_val = Math.pow(-1,1+asc)*a[1]["id"] + Math.pow(-1,asc)*b[1]["id"];
+            return date_sort_val + id_sort_val;
           })
         );
     }
@@ -178,7 +185,7 @@ class Ledger {
       }
 
       transaction.bucket_before = curr_bucket_before;
-      transaction.bucket_after = transaction.bucket_before + transaction.value;
+      transaction.bucket_after = Number((transaction.bucket_before + transaction.value).toFixed(2));
       curr_bucket_before = transaction.bucket_after;
       curr_bucket_val = transaction.bucket_after;
     }
@@ -212,13 +219,13 @@ class Ledger {
   }
 }
 
+const valid_sort_fields = ["id","date","bucket"]
 class Budget {
   constructor() {
     // Dictionary of bucket ids and objects
     this.buckets = {};
     this.ledger = new Ledger();
-    this.valid_sort_fields = ["id","date","bucket"];
-    this.sort_field = "id";
+    this.sort_field = "date";
     this.sort_dir_asc = false;
   }
 
@@ -260,13 +267,14 @@ class Budget {
     return true;
   }
 
+  //TODO if transaction from older date is added, sort by date and put this at the end of that date, then update bucket vals
   addTransaction(date, bucket, description, value) {
     var transaction = new Transaction(this.ledger.id_counter,
-      date, bucket, description, value,
+      date, bucket, description, Number(value.toFixed(2)),
       this.buckets[bucket].value
     );
     
-    this.buckets[bucket].value += value;
+    this.buckets[bucket].value = Number((this.buckets[bucket].value + value).toFixed(2));
     this.ledger.addTransaction(transaction);
     return true;
   }
@@ -307,19 +315,79 @@ class Budget {
 }
 //===End Budget Classes===
 
-// ===Start File Export Functions===
-var dataFile = null;
+// ===Start File Import/Export Functions===
+function importJSON(object) {
+  var imported_budget = new Budget();
+
+  // If there are any objects that aren't correctly defined in the import file, let user know
+  var invalid_JSON = false;
+
+  // Add all the buckets
+  var bucket_keys = Object.keys(object.buckets);
+  for(var i = 0; i < bucket_keys.length; i++) {
+    var curr_bucket = object.buckets[bucket_keys[i]];
+    var name = "";
+    var val = 0;
+
+    // Bucket input validation
+    if(curr_bucket.display_name == null || typeof(curr_bucket.display_name) != "string") {
+      invalid_JSON = true;
+      name = "INVALID_JSON_BUCKET_"+i;
+    } else {
+      name = curr_bucket.display_name;
+    }
+
+    if(curr_bucket.value == null || typeof(curr_bucket.value) != "number") {
+      invalid_JSON = true;
+      val = 0
+    } else {
+      val = curr_bucket.value;
+    }
+    var success = imported_budget.addBucket(name,val);
+    if(!success) {
+      invalid_JSON = true;
+      imported_budget.addBucket("INVALID_JSON_BUCKET_"+i,val);
+    }
+  }
+
+  // Sort input validation
+  if(object.sort_field == null || typeof(object.sort_field) != "string" ||
+    !valid_sort_fields.includes(object.sort_field)) {
+
+    invalid_JSON = true;
+    imported_budget.sort_field = valid_sort_fields[0];
+  } else {
+    imported_budget.sort_field = object.sort_field;
+  }
+
+  if(object.sort_dir_asc == null || typeof(object.sort_dir_asc) != "boolean") {
+    invalid_JSON = true;
+    imported_budget.sort_dir_asc = false;
+  } else {
+    imported_budget.sort_dir_asc = object.sort_dir_asc;
+  }
+
+  // TODO Ledger input validation
+  // check that each transaction has the required fields (even if empty)
+  // sort transactions by id
+  // add each transaction
+
+  BUDGET = imported_budget;
+}
+
+
+var exportDataFile = null;
 function exportJSON(budget) {
   const data = new Blob([JSON.stringify(budget)], {type: "application/json"});
 
   // If replacing previous file, revoke object URL to avoid memory leaks
-  if (dataFile !== null) {
-    window.URL.revokeObjectURL(dataFile);
+  if (exportDataFile !== null) {
+    window.URL.revokeObjectURL(exportDataFile);
   }
 
-  dataFile = window.URL.createObjectURL(data);
+  exportDataFile = window.URL.createObjectURL(data);
 }
-// ===End File Export Functions===
+// ===End File Import/Export Functions===
 
 // ==================
 // FUNCTIONS FOR HTML
@@ -333,14 +401,53 @@ const formatter = new Intl.NumberFormat('en-US', {
 });
 
 //TODO allow user to import data
-//https://www.freecodecamp.org/news/upload-files-with-javascript/
-function importData(filetype) {
-  switch(filetype) {
-    case 'json':
-      
-      break;
-    // TODO allow csv import
+const valid_file_import_types = ["application/json"];
+function importData() {
+  var input = document.getElementById("data-upload")
+  var files = input.files;
+  if(files.length != 1) {
+    alert("Please upload one data file before trying to import.");
+    return;
   }
+
+  var file = files[0];
+  var file_type = file.type;
+  if(!valid_file_import_types.includes(file_type)) {
+    alert("Please upload an accepted file type: ["+valid_file_import_types+"].");
+  }
+
+  // Make promise to ensure data is read from file before being used in import functions
+  var file_read_promise = new Promise(function(resolve,reject) {
+    var reader = new FileReader();
+
+    switch(file_type) {
+      case 'application/json':
+        //Wait until read finished before importing data
+        reader.onloadend = function() {
+          var object = JSON.parse(reader.result);
+          importJSON(object);
+          resolve();
+        }
+      break;
+      // TODO allow csv import
+    }
+
+    // Handle error
+    reader.onerror = function (error) {
+      reject(error);
+    }
+
+    reader.readAsText(file); 
+  }); 
+  file_read_promise.then(
+    function() {
+      updateBucketTable();
+      updateLedgerTable();
+    },
+    function(error) {
+      alert(error);
+    }
+  );
 }
 
 function exportData(filetype) {
@@ -355,7 +462,7 @@ function exportData(filetype) {
   // Click the object URL link to download
   var link = document.createElement('a');
   link.setAttribute('download', 'budget.'+filetype);
-  link.href = dataFile;
+  link.href = exportDataFile;
   link.click();
 }
 
