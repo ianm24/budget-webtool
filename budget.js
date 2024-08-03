@@ -320,35 +320,43 @@ function importJSON(object) {
   var imported_budget = new Budget();
 
   // If there are any objects that aren't correctly defined in the import file, let user know
+  // TODO make this more informative:
+  // [bucket_display_name,bucket_value,duplicate_bucket,sort_field,sort_dir_asc,ledger_transactions,
+  // transaction(id,date,bucket,bucket_before,value,description)]
   var invalid_JSON = false;
 
   // Add all the buckets
-  var bucket_keys = Object.keys(object.buckets);
-  for(var i = 0; i < bucket_keys.length; i++) {
-    var curr_bucket = object.buckets[bucket_keys[i]];
-    var name = "";
-    var val = 0;
+  if(!object.buckets) {
+    invalid_JSON = true;
+  } else {
+    var bucket_keys = Object.keys(object.buckets);
+    for(var i = 0; i < bucket_keys.length; i++) {
+      var curr_bucket = object.buckets[bucket_keys[i]];
+      var name = "";
+      var val = 0;
 
-    // Bucket input validation
-    if(curr_bucket.display_name == null || typeof(curr_bucket.display_name) != "string") {
-      invalid_JSON = true;
-      name = "INVALID_JSON_BUCKET_"+i;
-    } else {
-      name = curr_bucket.display_name;
-    }
+      // Bucket input validation
+      if(curr_bucket.display_name == null || typeof(curr_bucket.display_name) != "string") {
+        invalid_JSON = true;
+        name = "INVALID_JSON_BUCKET_"+i;
+      } else {
+        name = curr_bucket.display_name;
+      }
 
-    if(curr_bucket.value == null || typeof(curr_bucket.value) != "number") {
-      invalid_JSON = true;
-      val = 0
-    } else {
-      val = curr_bucket.value;
-    }
-    var success = imported_budget.addBucket(name,val);
-    if(!success) {
-      invalid_JSON = true;
-      imported_budget.addBucket("INVALID_JSON_BUCKET_"+i,val);
+      if(curr_bucket.value == null || typeof(curr_bucket.value) != "number") {
+        invalid_JSON = true;
+        val = 0
+      } else {
+        val = curr_bucket.value;
+      }
+      var success = imported_budget.addBucket(name,val);
+      if(!success) {
+        invalid_JSON = true;
+        imported_budget.addBucket("INVALID_JSON_BUCKET_"+i,val);
+      }
     }
   }
+  
 
   // Sort input validation
   if(object.sort_field == null || typeof(object.sort_field) != "string" ||
@@ -367,10 +375,87 @@ function importJSON(object) {
     imported_budget.sort_dir_asc = object.sort_dir_asc;
   }
 
-  // TODO Ledger input validation
-  // check that each transaction has the required fields (even if empty)
-  // sort transactions by id
-  // add each transaction
+  // Ledger input validation
+  if(!object.ledger || !object.ledger.transactions) {
+    invalid_JSON = true;
+  } else {
+    // check that each transaction has the required fields (even if empty)
+    var invalid_id_counter = 0;
+    var max_id = 0;
+    var imported_transactions = {};
+    var import_ledger_keys = Object.keys(object.ledger.transactions);
+    for(var i = 0; i < import_ledger_keys.length; i++) {
+      var curr_transaction = object.ledger.transactions[import_ledger_keys[i]];
+      var curr_id = invalid_id_counter;
+      var curr_date = "0001-01-01";
+      var curr_bucket = "INVALID_JSON_TRANSACTION_BUCKET";
+      var curr_bucket_before = 0;
+      var curr_val = 0;
+      var curr_desc = "INVALID_JSON_DESCRIPTION";
+
+      if(curr_transaction.id == null || typeof(curr_transaction.id) != "number") {
+        invalid_JSON = true;
+        invalid_id_counter++;
+      } else {
+        curr_id = curr_transaction.id;
+        max_id = Math.max(max_id,curr_id);
+      }
+
+      //Check Date
+      if(curr_transaction.date == null || typeof(curr_transaction.date) != "string" 
+      || curr_transaction.date.match("[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]") == null) {
+        invalid_JSON = true;
+      } else {
+        curr_date = curr_transaction.date;
+      }
+
+      // Check bucket
+      if(curr_transaction.bucket == null || typeof(curr_transaction.bucket) != "string") {
+        invalid_JSON = true;
+      } else if (Object.keys(imported_budget.buckets).indexOf(curr_transaction.bucket)) {
+        invalid_JSON = true;
+        curr_bucket = curr_transaction.bucket;
+      } else {
+        curr_bucket = curr_transaction.bucket;
+      }
+
+      // Check Bucket before
+      if(curr_transaction.bucket_before == null || typeof(curr_transaction.bucket_before) != "number") {
+        invalid_JSON = true;
+      } else {
+        curr_bucket_before = curr_transaction.bucket_before;
+      }
+
+      // Check value
+      if(curr_transaction.value == null || typeof(curr_transaction.value) != "number") {
+        invalid_JSON = true;
+      } else {
+        curr_val = curr_transaction.value;
+      }
+
+      // Check description
+      if(curr_transaction.description == null || typeof(curr_transaction.description) != "string") {
+        invalid_JSON = true;
+      } else {
+        curr_desc = curr_transaction.description;
+      }
+
+      imported_transactions[import_ledger_keys[i]] = new Transaction(curr_id,curr_date,curr_bucket,
+        curr_desc,curr_val,curr_bucket_before)
+    }
+    imported_budget.ledger.transactions = imported_transactions;
+
+    // Check id_counter
+    if(object.ledger.id_counter == null || typeof(object.ledger.id_counter) != "number" ||
+    object.ledger.id_counter < max_id+invalid_id_counter) {
+      invalid_JSON = true;
+      imported_budget.ledger.id_counter = max_id+invalid_id_counter;
+    } else {
+      imported_budget.ledger.id_counter = object.ledger.id_counter;
+    }
+    
+  }
+  
 
   BUDGET = imported_budget;
 }
@@ -400,7 +485,7 @@ const formatter = new Intl.NumberFormat('en-US', {
   currency: 'USD'
 });
 
-//TODO allow user to import data
+// allows user to import data
 const valid_file_import_types = ["application/json"];
 function importData() {
   var input = document.getElementById("data-upload")
