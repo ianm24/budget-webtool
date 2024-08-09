@@ -27,6 +27,17 @@ class Transaction {
       this.bucket_before = Number(bucket_before.toFixed(2));
       this.bucket_after = Number((this.bucket_before + this.value).toFixed(2));
     }
+  
+    // Returns comparison of transaction dates and ids:
+    // negative if a < b, 0 if a=b, positive if a > b
+    // (pos and neg switch if asc is false)
+    static dateCompare(a,b,asc) {
+      var date_a = new Date(a.date);
+      var date_b = new Date(b.date);
+      var date_sort_val = Math.pow(-1,1+asc)*date_a + Math.pow(-1,asc)*date_b;
+      var id_sort_val = Math.pow(-1,1+asc)*a.id + Math.pow(-1,asc)*b.id;
+      return date_sort_val + id_sort_val;
+    }
 }
 
 class Ledger {
@@ -38,52 +49,44 @@ class Ledger {
   addTransaction(transaction) {
     var ledger_id = "_"+transaction.id;
     this.transactions[ledger_id] = transaction;
+    var new_bucket_val = Number((transaction.bucket_before + transaction.value).toFixed(2));
 
+    // If this transaction's date is before the latest transaction, update future transactions
+    this.sortLedger("date",false);
+    var latest_ledger_id = Object.keys(this.transactions)[0];
+    var latest_transaction = this.transactions[latest_ledger_id];
+    if(Transaction.dateCompare(transaction,latest_transaction,true) < 0) {
+      var adjacent_ledger_ids = this.getAdjacentTransactions(ledger_id);
+      var before_id = adjacent_ledger_ids[0];
+
+      var new_bucket_before = 0;
+      if(before_id != ledger_id) {
+        new_bucket_before = this.transactions[before_id];
+      }
+      this.transactions[ledger_id].bucket_before = new_bucket_before;
+
+      // update the rest of the transactions in this bucket
+      new_bucket_val = this.updateLedger(before_id);
+    }
     // Update ledger id counter
     this.id_counter++;
+    return new_bucket_val;
   }
 
   // Returns the new bucket value after updating all ledger transactions in the removed transaction's bucket
   removeTransaction(ledger_id) {
     // Update all transactions in the corresponding bucket
-    var transaction = this.transactions[ledger_id];
-    var target_bucket = transaction.bucket;
+    var adjacent_ledger_ids = this.getAdjacentTransactions(ledger_id);
+    var before_id = adjacent_ledger_ids[0];
+    var after_id = adjacent_ledger_ids[1];
 
-    // get the transaction in this bucket before this and note its bucket after
-    var ledger_ids = Object.keys(this.transactions);
-    var ledger_id_key_idx = ledger_ids.indexOf(ledger_id);
-
-    // If a previous transaction in this bucket isn't found, this is the first
-    var before_id = ledger_id;
     var new_bucket_before = 0;
-
-    // Assumes ledger is sorted by id in descending order
-    for(var i = ledger_id_key_idx+1; i < ledger_ids.length; i++) {
-      var curr_ledger_id = ledger_ids[i];
-      var transaction = this.transactions[curr_ledger_id];
-
-      if(transaction.bucket == target_bucket) {
-        before_id = curr_ledger_id;
-        new_bucket_before = transaction.bucket_after;
-        break;
-      }
+    if(before_id != ledger_id) {
+      new_bucket_before = this.transactions[before_id].bucket_after;
     }
-    
-    // Get the transaction in this bucket after this and set its before to the other's after
-    var after_id = ledger_id;
-    
-    // Assumes ledger is sorted by id in descending order
-    for(var i = ledger_id_key_idx-1; i > 0; i--) {
-      var curr_ledger_id = ledger_ids[i];
-      var transaction = this.transactions[curr_ledger_id];
 
-      if(transaction.bucket == target_bucket) {
-        after_id = curr_ledger_id;
-        transaction.bucket_before = new_bucket_before;
-        break;
-      }
-    }
-    
+    this.transactions[after_id].bucket_before = new_bucket_before;
+
     // update the rest of the transactions in this bucket
     var new_bucket_val = this.updateLedger(after_id);
 
@@ -156,14 +159,57 @@ class Ledger {
       case "date":
         this.transactions = Object.fromEntries(
           Object.entries(existing_transactions).sort(function (a,b) {
-            var date_a = new Date(a[1][field]);
-            var date_b = new Date(b[1][field]);
-            var date_sort_val = Math.pow(-1,1+asc)*date_a + Math.pow(-1,asc)*date_b;
-            var id_sort_val = Math.pow(-1,1+asc)*a[1]["id"] + Math.pow(-1,asc)*b[1]["id"];
-            return date_sort_val + id_sort_val;
+            return Transaction.dateCompare(a[1],b[1],asc);
           })
         );
     }
+  }
+
+
+  // Returns the ledger ids of the transactions before and after the input transaction
+  getAdjacentTransactions(ledger_id) {
+    // Yes I know sorting twice is inefficient but for the scale of a personal budget,
+    // It shouldn't affect performance too much (my current paper ledger has ~5000 entries for the past 5 years)
+    this.sortLedger("date",false);
+
+    var transaction = this.transactions[ledger_id];
+    var target_bucket = transaction.bucket;
+
+    // get the transaction in this bucket before this and note its bucket after
+    var ledger_ids = Object.keys(this.transactions);
+    var ledger_id_key_idx = ledger_ids.indexOf(ledger_id);
+
+    // If a previous transaction in this bucket isn't found, this is the first
+    var before_id = ledger_id;
+
+    // Assumes ledger is sorted by date then id in descending order
+    for(var i = ledger_id_key_idx+1; i < ledger_ids.length; i++) {
+      var curr_ledger_id = ledger_ids[i];
+      var curr_transaction = this.transactions[curr_ledger_id];
+
+      if(curr_transaction.bucket == target_bucket) {
+        before_id = curr_ledger_id;
+        break;
+      }
+    }
+    
+    // Get the transaction in this bucket after this and set its before to the other's after
+    var after_id = ledger_id;
+    
+    // Assumes ledger is sorted by id in descending order
+    for(var i = ledger_id_key_idx-1; i >= 0; i--) {
+      var curr_ledger_id = ledger_ids[i];
+      var curr_transaction = this.transactions[curr_ledger_id];
+
+      if(curr_transaction.bucket == target_bucket) {
+        after_id = curr_ledger_id;
+        break;
+      }
+    }
+
+    //TODO move sort field and sort asc values to ledger and resort here
+
+    return [before_id,after_id];
   }
 
   // Returns the new bucket value after updating all ledger transactions in that bucket
@@ -267,15 +313,15 @@ class Budget {
     return true;
   }
 
-  //TODO if transaction from older date is added, sort by date and put this at the end of that date, then update bucket vals
   addTransaction(date, bucket, description, value) {
     var transaction = new Transaction(this.ledger.id_counter,
       date, bucket, description, Number(value.toFixed(2)),
       this.buckets[bucket].value
     );
     
-    this.buckets[bucket].value = Number((this.buckets[bucket].value + value).toFixed(2));
-    this.ledger.addTransaction(transaction);
+    // this.buckets[bucket].value = Number((this.buckets[bucket].value + value).toFixed(2));
+    this.buckets[bucket].value = this.ledger.addTransaction(transaction);
+    this.sortLedger();
     return true;
   }
 
@@ -288,19 +334,8 @@ class Budget {
       return true;
     }
 
-    // If needed, sort ledger by descending id before removal then use previous sort method after
-    var curr_sort_field = this.sort_field;
-    var curr_sort_dir_asc = this.sort_dir_asc;
-    this.sort_field = "id";
-    this.sort_dir_asc = false;
-
-    // Yes I know sorting twice is inefficient but for the scale of a personal budget,
-    // It shouldn't affect performance too much (my current paper ledger has ~5000 entries for the past 5 years)
-    this.sortLedger();
     this.buckets[target_bucket].value = this.ledger.removeTransaction(transaction_id);
 
-    this.sort_field = curr_sort_field;
-    this.sort_dir_asc = curr_sort_dir_asc;
     this.sortLedger();
     return true;
   }
