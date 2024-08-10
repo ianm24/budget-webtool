@@ -4,7 +4,7 @@
 
 //===Start Budget Classes===
 class Bucket {
-  constructor(display_name,value) {
+  constructor(display_name, value) {
     this.display_name = display_name;
     this.value = Number(value.toFixed(2));
   }
@@ -19,25 +19,25 @@ class Transaction {
   constructor(id, date, bucket,
     description, value,
     bucket_before) {
-      this.id = id;
-      this.date = date;
-      this.bucket = bucket;
-      this.description = description;
-      this.value = Number(value.toFixed(2));
-      this.bucket_before = Number(bucket_before.toFixed(2));
-      this.bucket_after = Number((this.bucket_before + this.value).toFixed(2));
-    }
-  
-    // Returns comparison of transaction dates and ids:
-    // negative if a < b, 0 if a=b, positive if a > b
-    // (pos and neg switch if asc is false)
-    static dateCompare(a,b,asc) {
-      var date_a = new Date(a.date);
-      var date_b = new Date(b.date);
-      var date_sort_val = Math.pow(-1,1+asc)*date_a + Math.pow(-1,asc)*date_b;
-      var id_sort_val = Math.pow(-1,1+asc)*a.id + Math.pow(-1,asc)*b.id;
-      return date_sort_val + id_sort_val;
-    }
+    this.id = id;
+    this.date = date;
+    this.bucket = bucket;
+    this.description = description;
+    this.value = Number(value.toFixed(2));
+    this.bucket_before = Number(bucket_before.toFixed(2));
+    this.bucket_after = Number((this.bucket_before + this.value).toFixed(2));
+  }
+
+  // Returns comparison of transaction dates and ids:
+  // negative if a < b, 0 if a=b, positive if a > b
+  // (pos and neg switch if asc is false)
+  static dateCompare(a, b, asc) {
+    var date_a = new Date(a.date);
+    var date_b = new Date(b.date);
+    var date_sort_val = Math.pow(-1, 1 + asc) * date_a + Math.pow(-1, asc) * date_b;
+    var id_sort_val = Math.pow(-1, 1 + asc) * a.id + Math.pow(-1, asc) * b.id;
+    return date_sort_val + id_sort_val;
+  }
 }
 
 class Ledger {
@@ -47,20 +47,20 @@ class Ledger {
   }
 
   addTransaction(transaction) {
-    var ledger_id = "_"+transaction.id;
+    var ledger_id = "_" + transaction.id;
     this.transactions[ledger_id] = transaction;
     var new_bucket_val = Number((transaction.bucket_before + transaction.value).toFixed(2));
 
     // If this transaction's date is before the latest transaction, update future transactions
-    this.sortLedger("date",false);
+    this.sortLedger("date", false);
     var latest_ledger_id = Object.keys(this.transactions)[0];
     var latest_transaction = this.transactions[latest_ledger_id];
-    if(Transaction.dateCompare(transaction,latest_transaction,true) < 0) {
+    if (Transaction.dateCompare(transaction, latest_transaction, true) < 0) {
       var adjacent_ledger_ids = this.getAdjacentTransactions(ledger_id);
       var before_id = adjacent_ledger_ids[0];
 
       var new_bucket_before = 0;
-      if(before_id != ledger_id) {
+      if (before_id != ledger_id) {
         new_bucket_before = this.transactions[before_id];
       }
       this.transactions[ledger_id].bucket_before = new_bucket_before;
@@ -81,7 +81,7 @@ class Ledger {
     var after_id = adjacent_ledger_ids[1];
 
     var new_bucket_before = 0;
-    if(before_id != ledger_id) {
+    if (before_id != ledger_id) {
       new_bucket_before = this.transactions[before_id].bucket_after;
     }
 
@@ -98,14 +98,14 @@ class Ledger {
   }
 
   editTransaction(ledger_id, new_transaction) {
-    var old_transaction = this.items[ledger_id];
-    if(new_transaction.bucket != old_transaction.bucket ||
+    var old_transaction = this.transactions[ledger_id];
+    if (new_transaction.bucket != old_transaction.bucket ||
       new_transaction.value != old_transaction.value ||
-      new_transaction.bucket_before != old_transaction.bucket_before
+      new_transaction.date != old_transaction.date
     ) {
       // TODO handle bucket, value, and before bucket changes
       //Bucket change
-      //  old bucket 
+      //  old bucket
       //    set next transaction's before val to the removed before val
       //    repeat until all transactions after removal are updated
       //    update old bucket's value
@@ -115,10 +115,10 @@ class Ledger {
       //    get transaction with bt_id before this and set removed's bucket before and after accordingly
       //    set transaction with id after removed's bucket before to removed's after and increase bt_id by 1; update page table entries
       //      repeat until all transaction ids and bucket before/after values have been updated
-      //    update new bucket's value    
+      //    update new bucket's value
       //  remove transaction from old bucket list
       //  add transaction to its index in the new bucket list
-      //  update page table entry 
+      //  update page table entry
       //Value change
       //Before Value change
       return false;
@@ -129,27 +129,27 @@ class Ledger {
 
   // asc: true is sort should be in ascending order, false if descending
   // First sorts by the chosen field, then by transaction ID
-  sortLedger(field,asc) {
+  sortLedger(field, asc) {
     var existing_transactions = this.transactions;
-    switch(field) {
-      case "id":        
+    switch (field) {
+      case "id":
         this.transactions = Object.fromEntries(
           // (-1)^(1+asc) * a + (-1)^(asc) * b = {a-b if asc=true; b-a if asc=false}
-          Object.entries(existing_transactions).sort(function (a,b) { 
-            return Math.pow(-1,1+asc)*a[1][field] + Math.pow(-1,asc)*b[1][field];
+          Object.entries(existing_transactions).sort(function (a, b) {
+            return Math.pow(-1, 1 + asc) * a[1][field] + Math.pow(-1, asc) * b[1][field];
           })
         );
         break;
       case "bucket":
         this.transactions = Object.fromEntries(
-          Object.entries(existing_transactions).sort(function (a,b) {
-            var id_sort_val = Math.pow(-1,1+asc)*a[1]["id"] + Math.pow(-1,asc)*b[1]["id"];
-            if(a[1][field] < b[1][field]) {
-              var bucket_sort_val = -1*Math.pow(-1,1+asc);
+          Object.entries(existing_transactions).sort(function (a, b) {
+            var id_sort_val = Math.pow(-1, 1 + asc) * a[1]["id"] + Math.pow(-1, asc) * b[1]["id"];
+            if (a[1][field] < b[1][field]) {
+              var bucket_sort_val = -1 * Math.pow(-1, 1 + asc);
               return bucket_sort_val + id_sort_val;
             }
-            if(b[1][field] < a[1][field]) {
-              var bucket_sort_val = 1*Math.pow(-1,1+asc);
+            if (b[1][field] < a[1][field]) {
+              var bucket_sort_val = 1 * Math.pow(-1, 1 + asc);
               return bucket_sort_val + id_sort_val;
             }
             return 0;
@@ -158,8 +158,8 @@ class Ledger {
         break;
       case "date":
         this.transactions = Object.fromEntries(
-          Object.entries(existing_transactions).sort(function (a,b) {
-            return Transaction.dateCompare(a[1],b[1],asc);
+          Object.entries(existing_transactions).sort(function (a, b) {
+            return Transaction.dateCompare(a[1], b[1], asc);
           })
         );
     }
@@ -170,7 +170,7 @@ class Ledger {
   getAdjacentTransactions(ledger_id) {
     // Yes I know sorting twice is inefficient but for the scale of a personal budget,
     // It shouldn't affect performance too much (my current paper ledger has ~5000 entries for the past 5 years)
-    this.sortLedger("date",false);
+    this.sortLedger("date", false);
 
     var transaction = this.transactions[ledger_id];
     var target_bucket = transaction.bucket;
@@ -183,25 +183,25 @@ class Ledger {
     var before_id = ledger_id;
 
     // Assumes ledger is sorted by date then id in descending order
-    for(var i = ledger_id_key_idx+1; i < ledger_ids.length; i++) {
+    for (var i = ledger_id_key_idx + 1; i < ledger_ids.length; i++) {
       var curr_ledger_id = ledger_ids[i];
       var curr_transaction = this.transactions[curr_ledger_id];
 
-      if(curr_transaction.bucket == target_bucket) {
+      if (curr_transaction.bucket == target_bucket) {
         before_id = curr_ledger_id;
         break;
       }
     }
-    
+
     // Get the transaction in this bucket after this and set its before to the other's after
     var after_id = ledger_id;
-    
+
     // Assumes ledger is sorted by id in descending order
-    for(var i = ledger_id_key_idx-1; i >= 0; i--) {
+    for (var i = ledger_id_key_idx - 1; i >= 0; i--) {
       var curr_ledger_id = ledger_ids[i];
       var curr_transaction = this.transactions[curr_ledger_id];
 
-      if(curr_transaction.bucket == target_bucket) {
+      if (curr_transaction.bucket == target_bucket) {
         after_id = curr_ledger_id;
         break;
       }
@@ -209,7 +209,7 @@ class Ledger {
 
     //TODO move sort field and sort asc values to ledger and resort here
 
-    return [before_id,after_id];
+    return [before_id, after_id];
   }
 
   // Returns the new bucket value after updating all ledger transactions in that bucket
@@ -221,12 +221,12 @@ class Ledger {
     var curr_bucket_val = 0;
 
     var ledger_ids = Object.keys(this.transactions);
-    // Assumes ledger is sorted by id in descending order
-    for(var i = ledger_ids.indexOf(ledger_id); i >= 0; i--) {
+    // Assumes ledger is sorted by date and id in descending order
+    for (var i = ledger_ids.indexOf(ledger_id); i >= 0; i--) {
       var curr_ledger_id = ledger_ids[i];
       var transaction = this.transactions[curr_ledger_id];
-      
-      if(transaction.bucket != target_bucket) {
+
+      if (transaction.bucket != target_bucket) {
         continue;
       }
 
@@ -239,33 +239,33 @@ class Ledger {
     return curr_bucket_val;
   }
 
-  updateBucketName(bucket,new_bucket_id, new_bucket_name) {
+  updateBucketName(bucket, new_bucket_id, new_bucket_name) {
 
     // Add transaction in bucket to indicate changed name
     var bucket_name = bucket.display_name;
-    var bucket_id = bucket_name.toLowerCase().replaceAll(" ","_");
+    var bucket_id = bucket_name.toLowerCase().replaceAll(" ", "_");
     var bucket_val = bucket.value;
 
-    var ledger_id = "_"+this.id_counter;
+    var ledger_id = "_" + this.id_counter;
     var name_change_transaction = new Transaction(
-      ledger_id,"",new_bucket_id,
-      "Bucket name change from \""+bucket_name + "\" to \"" +
-      new_bucket_name+"\"",0,bucket_val
+      ledger_id, "", new_bucket_id,
+      "Bucket name change from \"" + bucket_name + "\" to \"" +
+      new_bucket_name + "\"", 0, bucket_val
     );
     this.transactions[ledger_id] = name_change_transaction;
     this.id_counter++;
-    
+
     // Update all transactions in the old bucket to the new bucket name
-    for(var ledger_id in this.transactions) {
+    for (var ledger_id in this.transactions) {
       var transaction = this.transactions[ledger_id];
-      if(transaction.bucket == bucket_id) {
+      if (transaction.bucket == bucket_id) {
         transaction.bucket = new_bucket_id;
       }
     }
   }
 }
 
-const valid_sort_fields = ["id","date","bucket"]
+const valid_sort_fields = ["id", "date", "bucket"]
 class Budget {
   constructor() {
     // Dictionary of bucket ids and objects
@@ -276,9 +276,9 @@ class Budget {
   }
 
   addBucket(name, value) {
-    var new_bucket = new Bucket(name,value);
-    var bucket_id = name.toLowerCase().replaceAll(" ","_");
-    if(this.buckets[bucket_id] != null) {
+    var new_bucket = new Bucket(name, value);
+    var bucket_id = name.toLowerCase().replaceAll(" ", "_");
+    if (this.buckets[bucket_id] != null) {
       // Can't have duplicate buckets
       return false;
     }
@@ -287,7 +287,7 @@ class Budget {
   }
 
   removeBucket(bucket_id) {
-    if(this.buckets[bucket_id] == null) {
+    if (this.buckets[bucket_id] == null) {
       // Can't remove nonexistent buckets
       return false;
     }
@@ -296,14 +296,14 @@ class Budget {
   }
 
   editBucket(bucket_id, new_bucket_name) {
-    var new_bucket_id = new_bucket_name.toLowerCase().replaceAll(" ","_");
-    if(this.buckets[new_bucket_id] != null) {
+    var new_bucket_id = new_bucket_name.toLowerCase().replaceAll(" ", "_");
+    if (this.buckets[new_bucket_id] != null) {
       // Can't have duplicate buckets
       return false;
     }
 
     // Update bucket name in ledger
-    this.ledger.updateBucketName(this.buckets[bucket_id],new_bucket_id, new_bucket_name);
+    this.ledger.updateBucketName(this.buckets[bucket_id], new_bucket_id, new_bucket_name);
 
     // Update key and display name (using defineProperty preserves order of buckets)
     Object.defineProperty(this.buckets, new_bucket_id, Object.getOwnPropertyDescriptor(this.buckets, bucket_id));
@@ -318,7 +318,7 @@ class Budget {
       date, bucket, description, Number(value.toFixed(2)),
       this.buckets[bucket].value
     );
-    
+
     // this.buckets[bucket].value = Number((this.buckets[bucket].value + value).toFixed(2));
     this.buckets[bucket].value = this.ledger.addTransaction(transaction);
     this.sortLedger();
@@ -329,13 +329,24 @@ class Budget {
     var transaction = this.ledger.transactions[transaction_id];
     var target_bucket = transaction.bucket;
 
-    if(this.sort_field == "id" && this.sort_dir_asc == false) {
+    if (this.sort_field == "id" && this.sort_dir_asc == false) {
       this.buckets[target_bucket].value = this.ledger.removeTransaction(transaction_id);
       return true;
     }
 
     this.buckets[target_bucket].value = this.ledger.removeTransaction(transaction_id);
 
+    this.sortLedger();
+    return true;
+  }
+
+  editTransaction(date, bucket, description, value, transaction_id) {
+    var new_transaction = new Transaction(transaction_id,
+      date, bucket, description, Number(value.toFixed(2)),
+      this.ledger.transactions[transaction_id].bucket_before
+    );
+
+    this.buckets[bucket].value = this.ledger.editTransaction(transaction_id, new_transaction);
     this.sortLedger();
     return true;
   }
@@ -361,40 +372,40 @@ function importJSON(object) {
   var invalid_JSON = false;
 
   // Add all the buckets
-  if(!object.buckets) {
+  if (!object.buckets) {
     invalid_JSON = true;
   } else {
     var bucket_keys = Object.keys(object.buckets);
-    for(var i = 0; i < bucket_keys.length; i++) {
+    for (var i = 0; i < bucket_keys.length; i++) {
       var curr_bucket = object.buckets[bucket_keys[i]];
       var name = "";
       var val = 0;
 
       // Bucket input validation
-      if(curr_bucket.display_name == null || typeof(curr_bucket.display_name) != "string") {
+      if (curr_bucket.display_name == null || typeof (curr_bucket.display_name) != "string") {
         invalid_JSON = true;
-        name = "INVALID_JSON_BUCKET_"+i;
+        name = "INVALID_JSON_BUCKET_" + i;
       } else {
         name = curr_bucket.display_name;
       }
 
-      if(curr_bucket.value == null || typeof(curr_bucket.value) != "number") {
+      if (curr_bucket.value == null || typeof (curr_bucket.value) != "number") {
         invalid_JSON = true;
         val = 0
       } else {
         val = curr_bucket.value;
       }
-      var success = imported_budget.addBucket(name,val);
-      if(!success) {
+      var success = imported_budget.addBucket(name, val);
+      if (!success) {
         invalid_JSON = true;
-        imported_budget.addBucket("INVALID_JSON_BUCKET_"+i,val);
+        imported_budget.addBucket("INVALID_JSON_BUCKET_" + i, val);
       }
     }
   }
-  
+
 
   // Sort input validation
-  if(object.sort_field == null || typeof(object.sort_field) != "string" ||
+  if (object.sort_field == null || typeof (object.sort_field) != "string" ||
     !valid_sort_fields.includes(object.sort_field)) {
 
     invalid_JSON = true;
@@ -403,7 +414,7 @@ function importJSON(object) {
     imported_budget.sort_field = object.sort_field;
   }
 
-  if(object.sort_dir_asc == null || typeof(object.sort_dir_asc) != "boolean") {
+  if (object.sort_dir_asc == null || typeof (object.sort_dir_asc) != "boolean") {
     invalid_JSON = true;
     imported_budget.sort_dir_asc = false;
   } else {
@@ -411,7 +422,7 @@ function importJSON(object) {
   }
 
   // Ledger input validation
-  if(!object.ledger || !object.ledger.transactions) {
+  if (!object.ledger || !object.ledger.transactions) {
     invalid_JSON = true;
   } else {
     // check that each transaction has the required fields (even if empty)
@@ -419,7 +430,7 @@ function importJSON(object) {
     var max_id = 0;
     var imported_transactions = {};
     var import_ledger_keys = Object.keys(object.ledger.transactions);
-    for(var i = 0; i < import_ledger_keys.length; i++) {
+    for (var i = 0; i < import_ledger_keys.length; i++) {
       var curr_transaction = object.ledger.transactions[import_ledger_keys[i]];
       var curr_id = invalid_id_counter;
       var curr_date = "0001-01-01";
@@ -428,24 +439,24 @@ function importJSON(object) {
       var curr_val = 0;
       var curr_desc = "INVALID_JSON_DESCRIPTION";
 
-      if(curr_transaction.id == null || typeof(curr_transaction.id) != "number") {
+      if (curr_transaction.id == null || typeof (curr_transaction.id) != "number") {
         invalid_JSON = true;
         invalid_id_counter++;
       } else {
         curr_id = curr_transaction.id;
-        max_id = Math.max(max_id,curr_id);
+        max_id = Math.max(max_id, curr_id);
       }
 
       //Check Date
-      if(curr_transaction.date == null || typeof(curr_transaction.date) != "string" 
-      || curr_transaction.date.match("[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]") == null) {
+      if (curr_transaction.date == null || typeof (curr_transaction.date) != "string"
+        || curr_transaction.date.match("[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]") == null) {
         invalid_JSON = true;
       } else {
         curr_date = curr_transaction.date;
       }
 
       // Check bucket
-      if(curr_transaction.bucket == null || typeof(curr_transaction.bucket) != "string") {
+      if (curr_transaction.bucket == null || typeof (curr_transaction.bucket) != "string") {
         invalid_JSON = true;
       } else if (Object.keys(imported_budget.buckets).indexOf(curr_transaction.bucket)) {
         invalid_JSON = true;
@@ -455,42 +466,42 @@ function importJSON(object) {
       }
 
       // Check Bucket before
-      if(curr_transaction.bucket_before == null || typeof(curr_transaction.bucket_before) != "number") {
+      if (curr_transaction.bucket_before == null || typeof (curr_transaction.bucket_before) != "number") {
         invalid_JSON = true;
       } else {
         curr_bucket_before = curr_transaction.bucket_before;
       }
 
       // Check value
-      if(curr_transaction.value == null || typeof(curr_transaction.value) != "number") {
+      if (curr_transaction.value == null || typeof (curr_transaction.value) != "number") {
         invalid_JSON = true;
       } else {
         curr_val = curr_transaction.value;
       }
 
       // Check description
-      if(curr_transaction.description == null || typeof(curr_transaction.description) != "string") {
+      if (curr_transaction.description == null || typeof (curr_transaction.description) != "string") {
         invalid_JSON = true;
       } else {
         curr_desc = curr_transaction.description;
       }
 
-      imported_transactions[import_ledger_keys[i]] = new Transaction(curr_id,curr_date,curr_bucket,
-        curr_desc,curr_val,curr_bucket_before)
+      imported_transactions[import_ledger_keys[i]] = new Transaction(curr_id, curr_date, curr_bucket,
+        curr_desc, curr_val, curr_bucket_before)
     }
     imported_budget.ledger.transactions = imported_transactions;
 
     // Check id_counter
-    if(object.ledger.id_counter == null || typeof(object.ledger.id_counter) != "number" ||
-    object.ledger.id_counter < max_id+invalid_id_counter) {
+    if (object.ledger.id_counter == null || typeof (object.ledger.id_counter) != "number" ||
+      object.ledger.id_counter < max_id + invalid_id_counter) {
       invalid_JSON = true;
-      imported_budget.ledger.id_counter = max_id+invalid_id_counter;
+      imported_budget.ledger.id_counter = max_id + invalid_id_counter;
     } else {
       imported_budget.ledger.id_counter = object.ledger.id_counter;
     }
-    
+
   }
-  
+
 
   BUDGET = imported_budget;
 }
@@ -498,7 +509,7 @@ function importJSON(object) {
 
 var exportDataFile = null;
 function exportJSON(budget) {
-  const data = new Blob([JSON.stringify(budget)], {type: "application/json"});
+  const data = new Blob([JSON.stringify(budget)], { type: "application/json" });
 
   // If replacing previous file, revoke object URL to avoid memory leaks
   if (exportDataFile !== null) {
@@ -525,30 +536,30 @@ const valid_file_import_types = ["application/json"];
 function importData() {
   var input = document.getElementById("data-upload")
   var files = input.files;
-  if(files.length != 1) {
+  if (files.length != 1) {
     alert("Please upload one data file before trying to import.");
     return;
   }
 
   var file = files[0];
   var file_type = file.type;
-  if(!valid_file_import_types.includes(file_type)) {
-    alert("Please upload an accepted file type: ["+valid_file_import_types+"].");
+  if (!valid_file_import_types.includes(file_type)) {
+    alert("Please upload an accepted file type: [" + valid_file_import_types + "].");
   }
 
   // Make promise to ensure data is read from file before being used in import functions
-  var file_read_promise = new Promise(function(resolve,reject) {
+  var file_read_promise = new Promise(function (resolve, reject) {
     var reader = new FileReader();
 
-    switch(file_type) {
+    switch (file_type) {
       case 'application/json':
         //Wait until read finished before importing data
-        reader.onloadend = function() {
+        reader.onloadend = function () {
           var object = JSON.parse(reader.result);
           importJSON(object);
           resolve();
         }
-      break;
+        break;
       // TODO allow csv import
     }
 
@@ -557,14 +568,14 @@ function importData() {
       reject(error);
     }
 
-    reader.readAsText(file); 
-  }); 
+    reader.readAsText(file);
+  });
   file_read_promise.then(
-    function() {
+    function () {
       updateBucketTable();
       updateLedgerTable();
     },
-    function(error) {
+    function (error) {
       alert(error);
     }
   );
@@ -572,7 +583,7 @@ function importData() {
 
 function exportData(filetype) {
   // Set object URL for the current budget
-  switch(filetype) {
+  switch (filetype) {
     case 'json':
       exportJSON(BUDGET);
       break;
@@ -581,7 +592,7 @@ function exportData(filetype) {
 
   // Click the object URL link to download
   var link = document.createElement('a');
-  link.setAttribute('download', 'budget.'+filetype);
+  link.setAttribute('download', 'budget.' + filetype);
   link.href = exportDataFile;
   link.click();
 }
@@ -598,35 +609,35 @@ function updateBucketTable() {
   // Add header
   var header_labels = ["Bucket", "Value", "", ""];
   var header = document.createElement('tr');
-  
-  for(var i = 0; i < header_labels.length; i++) {
+
+  for (var i = 0; i < header_labels.length; i++) {
     var cell = document.createElement('th');
     cell.innerHTML = header_labels[i];
     header.appendChild(cell);
   }
   table.appendChild(header);
 
-  
+
 
   // Add buckets
-  for(var bucket_id in BUDGET.buckets) {
+  for (var bucket_id in BUDGET.buckets) {
     var entry = document.createElement('tr');
     var bucket = BUDGET.buckets[bucket_id];
 
     // Entry values
     var name_entry = document.createElement('td');
-    name_entry.setAttribute("id",bucket_id);
+    name_entry.setAttribute("id", bucket_id);
     name_entry.innerHTML = bucket.display_name;
 
-    var value_entry = document.createElement('td');  
+    var value_entry = document.createElement('td');
     value_entry.innerHTML = formatter.format(bucket.value);
 
     // Edit and remove buttons
     var edit_button = document.createElement('td');
-    edit_button.innerHTML = "<button class='bucket-edit' onclick='editBucket(\""+bucket_id+"\",this)'>Edit</button>"
+    edit_button.innerHTML = "<button class='bucket-edit' onclick='editBucket(\"" + bucket_id + "\",this)'>Edit</button>"
 
     var remove_button = document.createElement('td');
-    remove_button.innerHTML = "<button class='bucket-remove' onclick='removeBucket(\""+bucket_id+"\")'>Remove</button>"
+    remove_button.innerHTML = "<button class='bucket-remove' onclick='removeBucket(\"" + bucket_id + "\")'>Remove</button>"
 
     // Add to table
     entry.appendChild(name_entry);
@@ -637,7 +648,7 @@ function updateBucketTable() {
 
     // Update transaction bucket selector
     var select_option = document.createElement('option');
-    select_option.setAttribute("value",bucket_id);
+    select_option.setAttribute("value", bucket_id);
     select_option.innerHTML = bucket.display_name;
 
     select.appendChild(select_option);
@@ -650,14 +661,14 @@ function updateBucketTable() {
 
 function addBucket() {
   var new_bucket_name = document.getElementById("new-bucket-name").value;
-  if(new_bucket_name == "") {
+  if (new_bucket_name == "") {
     alert("Please enter a name for the new bucket.");
     return;
   }
-  var success = BUDGET.addBucket(new_bucket_name,0);
+  var success = BUDGET.addBucket(new_bucket_name, 0);
 
   // If bucket already exists, alert user
-  if(!success) {
+  if (!success) {
     alert("New bucket name too similar to existing bucket name.");
     return;
   }
@@ -673,41 +684,41 @@ function removeBucket(bucket_id) {
 }
 
 // Edit bucket name
-function editBucket(bucket_id,edit_button) {
+function editBucket(bucket_id, edit_button) {
   // Get cell that bucket name is in and change to input field
   var cell = document.getElementById(bucket_id);
   var curr_cell_inner = cell.innerHTML;
-  cell.innerHTML = "<input id='"+bucket_id+"_edit' type='text' Value='"+curr_cell_inner+"'>";
+  cell.innerHTML = "<input id='" + bucket_id + "_edit' type='text' Value='" + curr_cell_inner + "'>";
 
   // Add cancel button under input field
-  cell.innerHTML += "<button id='"+bucket_id+"_cancel' onclick='cancelBucketEdit(\""+bucket_id+"\",this)'>Cancel</button>";
+  cell.innerHTML += "<button id='" + bucket_id + "_cancel' onclick='cancelBucketEdit(\"" + bucket_id + "\",this)'>Cancel</button>";
 
   // Change this button to Submit Changes
-  edit_button.setAttribute("id",bucket_id+"_submit");
-  edit_button.setAttribute("onclick","confirmBucketEdit(\""+bucket_id+"\",this)");
-  edit_button.innerHTML = "Submit Changes";  
+  edit_button.setAttribute("id", bucket_id + "_submit");
+  edit_button.setAttribute("onclick", "confirmBucketEdit(\"" + bucket_id + "\")");
+  edit_button.innerHTML = "Submit Changes";
 }
 
-function cancelBucketEdit(bucket_id,cancel_button) {
+function cancelBucketEdit(bucket_id, cancel_button) {
   // Replace input with plane-text of the bucket's display name
   var cell = document.getElementById(bucket_id);
   cell.innerHTML = BUDGET.buckets[bucket_id].display_name;
 
   // Switch Submit Changes button back to Edit
-  var submit_button = document.getElementById(bucket_id+"_submit");
+  var submit_button = document.getElementById(bucket_id + "_submit");
   submit_button.removeAttribute("id");
-  submit_button.setAttribute("onclick","editBucket(\""+bucket_id+"\",this)")
+  submit_button.setAttribute("onclick", "editBucket(\"" + bucket_id + "\",this)")
   submit_button.innerHTML = "Edit";
 
   // Remove cancel button
   cancel_button.remove();
 }
 
-function confirmBucketEdit(bucket_id,confirm_button) {
+function confirmBucketEdit(bucket_id) {
   // Check if new bucket name is valid, if not, give alert
-  var new_bucket_name = document.getElementById(bucket_id+"_edit").value;
-  var success = BUDGET.editBucket(bucket_id,new_bucket_name);
-  if(!success) {
+  var new_bucket_name = document.getElementById(bucket_id + "_edit").value;
+  var success = BUDGET.editBucket(bucket_id, new_bucket_name);
+  if (!success) {
     alert("New bucket name too similar to existing bucket name.");
     return;
   }
@@ -728,8 +739,8 @@ function updateLedgerTable() {
   var header_labels = ["Date", "Bucket", "Description",
     "Value", "Bucket Value Before", "Bucket Value After"];
   var header = document.createElement('tr');
-  
-  for(var i = 0; i < header_labels.length; i++) {
+
+  for (var i = 0; i < header_labels.length; i++) {
     var cell = document.createElement('th');
     cell.innerHTML = header_labels[i];
     header.appendChild(cell);
@@ -738,36 +749,41 @@ function updateLedgerTable() {
 
   // Get transactions in reverse order added
   BUDGET.sortLedger();
-  
+
   // Add transactions
-  for(var ledger_id in BUDGET.ledger.transactions) {
+  for (var ledger_id in BUDGET.ledger.transactions) {
     var transaction = BUDGET.ledger.transactions[ledger_id];
 
     var entry = document.createElement('tr');
 
     // Entry values
     var date_entry = document.createElement('td');
+    date_entry.setAttribute("id", ledger_id + "-date");
     date_entry.innerHTML = transaction.date;
-    
+
     var bucket_entry = document.createElement('td');
+    bucket_entry.setAttribute("id", ledger_id + "-bucket");
     // If bucket name has changed, display id
-    if(BUDGET.buckets[transaction.bucket] == null) {
+    if (BUDGET.buckets[transaction.bucket] == null) {
       bucket_entry.innerHTML = transaction.bucket;
     } else {
       bucket_entry.innerHTML = BUDGET.buckets[transaction.bucket].display_name;
     }
 
     var desc_entry = document.createElement('td');
-    desc_entry.setAttribute("id",ledger_id);
+    desc_entry.setAttribute("id", ledger_id + "-description");
     desc_entry.innerHTML = transaction.description;
 
-    var value_entry = document.createElement('td');  
+    var value_entry = document.createElement('td');
+    value_entry.setAttribute("id", ledger_id + "-value");
     value_entry.innerHTML = formatter.format(transaction.value);
 
-    var buck_bef_entry = document.createElement('td');  
+    var buck_bef_entry = document.createElement('td');
+    buck_bef_entry.setAttribute("id", ledger_id + "-bucket-before");
     buck_bef_entry.innerHTML = formatter.format(transaction.bucket_before);
 
-    var buck_aft_entry = document.createElement('td');  
+    var buck_aft_entry = document.createElement('td');
+    buck_aft_entry.setAttribute("id", ledger_id + "-bucket-after");
     buck_aft_entry.innerHTML = formatter.format(transaction.bucket_after);
 
     // Add values to entry
@@ -779,12 +795,12 @@ function updateLedgerTable() {
     entry.appendChild(buck_aft_entry);
 
     // Edit and remove buttons won't show on bucket name change transactions
-    if(!(transaction.date == "" && transaction.value == 0)) {
+    if (!(transaction.date == "" && transaction.value == 0)) {
       var edit_button = document.createElement('td');
-      edit_button.innerHTML = "<button class='transaction-edit' onclick='editTransaction(\""+ledger_id+"\",this)'>Edit</button>"
+      edit_button.innerHTML = "<button class='transaction-edit' onclick='editTransaction(\"" + ledger_id + "\",this)'>Edit</button>"
 
       var remove_button = document.createElement('td');
-      remove_button.innerHTML = "<button class='transaction-remove' onclick='removeTransaction(\""+ledger_id+"\")'>Remove</button>"
+      remove_button.innerHTML = "<button class='transaction-remove' onclick='removeTransaction(\"" + ledger_id + "\")'>Remove</button>"
       entry.appendChild(edit_button);
       entry.appendChild(remove_button);
     }
@@ -794,9 +810,9 @@ function updateLedgerTable() {
   }
 
   // Empty new transaction fields
-  var input_fields = ["date","bucket","desc","value"];
-  for(var i = 0; i < input_fields.length; i++) {
-    document.getElementById(input_fields[i]+"-input").value = "";
+  var input_fields = ["date", "bucket", "desc", "value"];
+  for (var i = 0; i < input_fields.length; i++) {
+    document.getElementById(input_fields[i] + "-input").value = "";
   }
 
 }
@@ -807,32 +823,32 @@ function addTransaction() {
   var transaction_bucket = document.getElementById("bucket-input").value;
   var transaction_desc = document.getElementById("desc-input").value;
   var transaction_value = Number(document.getElementById("value-input").value);
-  if(transaction_date == "") {
+  if (transaction_date == "") {
     alert("Please select a date for the transaction");
     return;
   }
-  if(transaction_bucket == "") {
+  if (transaction_bucket == "") {
     alert("Please select a bucket for the transaction");
     return;
   }
-  if(transaction_desc == "") {
+  if (transaction_desc == "") {
     alert("Please add a description for the transaction");
     return;
   }
-  if(transaction_value == "") {
+  if (transaction_value == "") {
     alert("Please add a numeric value for the transaction");
     return;
   } else if (transaction_value > Number.MAX_SAFE_INTEGER) {
-    alert("You have added a transaction with a value higher than JavaScript "+
+    alert("You have added a transaction with a value higher than JavaScript " +
       "can handle without precision errors. Please use a smaller value.");
     return;
   }
-  
+
 
   // Add the transaction to the ledger
-  var success = BUDGET.addTransaction(transaction_date,transaction_bucket,
+  var success = BUDGET.addTransaction(transaction_date, transaction_bucket,
     transaction_desc, transaction_value);
-  
+
   // Update ledger table
   updateLedgerTable();
   // Update bucket table
@@ -850,7 +866,95 @@ function removeTransaction(transaction_id) {
   updateBucketTable();
 }
 
-// TODO
-function editTransaction(transaction_id) {
-  
+function editTransaction(transaction_id, edit_button) {
+  // Get cells for the transaction and change them to input fields
+  var date_cell = document.getElementById(transaction_id + "-date");
+  var date_cell_inner = date_cell.innerHTML;
+  date_cell.innerHTML = "<input id='" + transaction_id + "-date_edit' type='date' old_value='" + date_cell_inner + "' Value='" + date_cell_inner + "'>";
+
+  var bucket_cell = document.getElementById(transaction_id + "-bucket");
+  var bucket_cell_value = bucket_cell.innerHTML;
+  var bucket_select_options = document.getElementById("bucket-input").innerHTML.replace(">" + bucket_cell_value, "selected='true'>" + bucket_cell_value);
+  var bucket_cell_inner = "<select id='" + transaction_id + "-bucket_edit' old_value='" + bucket_cell_value + "' Value='" + bucket_cell_value + "'>";
+  bucket_cell.innerHTML = bucket_cell_inner + bucket_select_options + "</select>";
+
+  var desc_cell = document.getElementById(transaction_id + "-description");
+  var desc_cell_inner = desc_cell.innerHTML;
+  desc_cell.innerHTML = "<input id='" + transaction_id + "-description_edit' type='text' old_value='" + desc_cell_inner + "' Value='" + desc_cell_inner + "'>";
+
+  var value_cell = document.getElementById(transaction_id + "-value");
+  var value_cell_inner = value_cell.innerHTML.replace("$", "");
+  value_cell.innerHTML = "<input id='" + transaction_id + "-value_edit' type='number' step='0.01' old_value='" + Number(value_cell_inner) + "' Value='" + Number(value_cell_inner) + "'>";
+
+  // TODO Add cancel button under input field
+  var cancel_button = document.createElement("button")
+  cancel_button.setAttribute("id", transaction_id + "_cancel");
+  cancel_button.setAttribute("onclick", "cancelTransactionEdit(\"" + transaction_id + "\",this)");
+  cancel_button.innerHTML = "Cancel";
+  edit_button.parentElement.appendChild(cancel_button);
+
+  // Change this button to Submit Changes
+  edit_button.setAttribute("id", transaction_id + "_submit");
+  edit_button.setAttribute("onclick", "confirmTransactionEdit(\"" + transaction_id + "\")");
+  edit_button.innerHTML = "Submit Changes";
+}
+
+function cancelTransactionEdit(transaction_id, cancel_button) {
+  // Replace inputs with the display values
+  var date_cell = document.getElementById(transaction_id + "-date");
+  var bucket_cell = document.getElementById(transaction_id + "-bucket");
+  var desc_cell = document.getElementById(transaction_id + "-description");
+  var value_cell = document.getElementById(transaction_id + "-value");
+
+  date_cell.innerHTML = date_cell.children[0].getAttribute("old_value");
+  bucket_cell.innerHTML = bucket_cell.children[0].getAttribute("old_value");
+  desc_cell.innerHTML = desc_cell.children[0].getAttribute("old_value");
+  value_cell.innerHTML = formatter.format(value_cell.children[0].getAttribute("old_value"));
+
+
+  // Switch Submit Changes button back to Edit
+  var submit_button = document.getElementById(transaction_id + "_submit");
+  submit_button.removeAttribute("id");
+  submit_button.setAttribute("onclick", "editTransaction(\"" + transaction_id + "\",this)")
+  submit_button.innerHTML = "Edit";
+
+  // Remove cancel button
+  cancel_button.remove();
+}
+
+function confirmTransactionEdit(transaction_id) {
+  // Get each field for transaction
+  var new_transaction_date = document.getElementById(transaction_id + "-date").children[0].value;
+  var new_transaction_bucket = document.getElementById(transaction_id + "-bucket").children[0].value;
+  new_transaction_bucket = new_transaction_bucket.toLowerCase().replaceAll(" ", "_");
+  var new_transaction_desc = document.getElementById(transaction_id + "-description").children[0].value;
+  var new_transaction_value = Number(document.getElementById(transaction_id + "-value").children[0].value);
+  if (new_transaction_date == "") {
+    alert("Please select a date for the transaction");
+    return;
+  }
+  if (new_transaction_bucket == "") {
+    alert("Please select a bucket for the transaction");
+    return;
+  }
+  if (new_transaction_desc == "") {
+    alert("Please add a description for the transaction");
+    return;
+  }
+  if (new_transaction_value == "") {
+    alert("Please add a numeric value for the transaction");
+    return;
+  } else if (new_transaction_value > Number.MAX_SAFE_INTEGER) {
+    alert("You have added a transaction with a value higher than JavaScript " +
+      "can handle without precision errors. Please use a smaller value.");
+    return;
+  }
+
+  BUDGET.editTransaction(new_transaction_date, new_transaction_bucket, new_transaction_desc, new_transaction_value, transaction_id);
+
+  // Update bucket list
+  updateBucketTable();
+
+  // Update ledger items associated with changed bucket
+  updateLedgerTable();
 }
