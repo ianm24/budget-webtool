@@ -40,10 +40,13 @@ class Transaction {
   }
 }
 
+const valid_sort_fields = ["id", "date", "bucket", "value"];
 class Ledger {
   constructor() {
     this.transactions = {};
     this.id_counter = 0;
+    this.sort_field = "date";
+    this.sort_dir_asc = false;
   }
 
   addTransaction(transaction) {
@@ -70,6 +73,7 @@ class Ledger {
     }
     // Update ledger id counter
     this.id_counter++;
+    this.sortLedger();
     return new_bucket_val;
   }
 
@@ -133,12 +137,14 @@ class Ledger {
     } else {
       this.transactions[ledger_id] = new_transaction;
     }
+
+    this.sortLedger();
     return new_bucket_vals;
   }
 
   // asc: true is sort should be in ascending order, false if descending
   // First sorts by the chosen field, then by transaction ID
-  sortLedger(field, asc) {
+  sortLedger(field = this.sort_field, asc = this.sort_dir_asc) {
     var existing_transactions = this.transactions;
     switch (field) {
       case "id":
@@ -149,17 +155,17 @@ class Ledger {
           })
         );
         break;
-      case "bucket":
+      case "bucket": // TODO make sorting by this keep a consistent date sor within bucket
         this.transactions = Object.fromEntries(
           Object.entries(existing_transactions).sort(function (a, b) {
-            var id_sort_val = Math.pow(-1, 1 + asc) * a[1]["id"] + Math.pow(-1, asc) * b[1]["id"];
-            if (a[1][field] < b[1][field]) {
+            var date_sort_val = Transaction.dateCompare(a[1], b[1], false);
+            if (a[1][field] > b[1][field]) {
               var bucket_sort_val = -1 * Math.pow(-1, 1 + asc);
-              return bucket_sort_val + id_sort_val;
+              return bucket_sort_val;
             }
-            if (b[1][field] < a[1][field]) {
+            if (b[1][field] > a[1][field]) {
               var bucket_sort_val = 1 * Math.pow(-1, 1 + asc);
-              return bucket_sort_val + id_sort_val;
+              return bucket_sort_val;
             }
             return 0;
           })
@@ -171,9 +177,27 @@ class Ledger {
             return Transaction.dateCompare(a[1], b[1], asc);
           })
         );
+        break;
+      case "value":
+        this.transactions = Object.fromEntries(
+          // (-1)^(1+asc) * a + (-1)^(asc) * b = {a-b if asc=true; b-a if asc=false}
+          Object.entries(existing_transactions).sort(function (a, b) {
+            return Math.pow(-1, 1 + asc) * a[1][field] + Math.pow(-1, asc) * b[1][field];
+          })
+        );
+        break;
     }
   }
 
+  setLedgerSortParams(field, asc) {
+    if (!valid_sort_fields.includes(field) || typeof (asc) != "boolean") {
+      return false;
+    }
+
+    this.sort_field = field;
+    this.sort_dir_asc = asc;
+    return true;
+  }
 
   // Returns the ledger ids of the transactions before and after the input transaction
   getAdjacentTransactions(ledger_id) {
@@ -216,8 +240,7 @@ class Ledger {
       }
     }
 
-    //TODO move sort field and sort asc values to ledger and resort here
-
+    this.sortLedger();
     return [before_id, after_id];
   }
 
@@ -274,14 +297,11 @@ class Ledger {
   }
 }
 
-const valid_sort_fields = ["id", "date", "bucket"]
 class Budget {
   constructor() {
     // Dictionary of bucket ids and objects
     this.buckets = {};
     this.ledger = new Ledger();
-    this.sort_field = "date";
-    this.sort_dir_asc = false;
   }
 
   addBucket(name, value) {
@@ -330,7 +350,6 @@ class Budget {
 
     // this.buckets[bucket].value = Number((this.buckets[bucket].value + value).toFixed(2));
     this.buckets[bucket].value = this.ledger.addTransaction(transaction);
-    this.sortLedger();
     return true;
   }
 
@@ -345,7 +364,6 @@ class Budget {
 
     this.buckets[target_bucket].value = this.ledger.removeTransaction(transaction_id);
 
-    this.sortLedger();
     return true;
   }
 
@@ -358,16 +376,17 @@ class Budget {
     var bucket_vals = this.ledger.editTransaction(transaction_id, new_transaction);
     this.buckets[bucket_vals[0][0]].value = bucket_vals[0][1];
     this.buckets[bucket_vals[1][0]].value = bucket_vals[1][1];
-    this.sortLedger();
+
     return true;
   }
 
   sortLedger() {
-    // if(!this.valid_sort_fields.includes(field)) {
-    //   return false;
-    // }
-    this.ledger.sortLedger(this.sort_field, this.sort_dir_asc);
+    this.ledger.sortLedger();
     return true;
+  }
+
+  setLedgerSortParams(sort_field, sort_dir_asc) {
+    return this.ledger.setLedgerSortParams(sort_field, sort_dir_asc);
   }
 }
 //===End Budget Classes===
@@ -414,28 +433,27 @@ function importJSON(object) {
     }
   }
 
-
-  // Sort input validation
-  if (object.sort_field == null || typeof (object.sort_field) != "string" ||
-    !valid_sort_fields.includes(object.sort_field)) {
-
-    invalid_JSON = true;
-    imported_budget.sort_field = valid_sort_fields[0];
-  } else {
-    imported_budget.sort_field = object.sort_field;
-  }
-
-  if (object.sort_dir_asc == null || typeof (object.sort_dir_asc) != "boolean") {
-    invalid_JSON = true;
-    imported_budget.sort_dir_asc = false;
-  } else {
-    imported_budget.sort_dir_asc = object.sort_dir_asc;
-  }
-
   // Ledger input validation
   if (!object.ledger || !object.ledger.transactions) {
     invalid_JSON = true;
   } else {
+    // Sort input validation
+    if (object.ledger.sort_field == null || typeof (object.ledger.sort_field) != "string" ||
+      !valid_sort_fields.includes(object.ledger.sort_field)) {
+
+      invalid_JSON = true;
+      imported_budget.ledger.sort_field = valid_sort_fields[0];
+    } else {
+      imported_budget.ledger.sort_field = object.ledger.sort_field;
+    }
+
+    if (object.ledger.sort_dir_asc == null || typeof (object.ledger.sort_dir_asc) != "boolean") {
+      invalid_JSON = true;
+      imported_budget.ledger.sort_dir_asc = false;
+    } else {
+      imported_budget.ledger.sort_dir_asc = object.ledger.sort_dir_asc;
+    }
+
     // check that each transaction has the required fields (even if empty)
     var invalid_id_counter = 0;
     var max_id = 0;
@@ -740,7 +758,6 @@ function confirmBucketEdit(bucket_id) {
   updateLedgerTable();
 }
 
-// TODO have a way for user to decide between sorting by id, date, bucket in asc or desc
 function updateLedgerTable() {
   // Empty table
   var table = document.getElementById("ledger-table");
@@ -749,11 +766,29 @@ function updateLedgerTable() {
   // Add header
   var header_labels = ["Date", "Bucket", "Description",
     "Value", "Bucket Value Before", "Bucket Value After"];
+  var sortable_labels = ["Date", "Bucket", "Value"];
   var header = document.createElement('tr');
 
   for (var i = 0; i < header_labels.length; i++) {
     var cell = document.createElement('th');
-    cell.innerHTML = header_labels[i];
+
+    // Allow users to sort by different fields
+    if (sortable_labels.includes(header_labels[i])) {
+      var sort_button = document.createElement("button");
+      var sort_function = "sortLedgerTable('" + header_labels[i].toLowerCase() + "',true,this)";
+      var button_text = header_labels[i];
+
+      if (header_labels[i].toLowerCase() == BUDGET.ledger.sort_field) {
+        sort_function = "sortLedgerTable('" + header_labels[i].toLowerCase() + "'," + !BUDGET.ledger.sort_dir_asc + ",this)";
+        button_text += BUDGET.ledger.sort_dir_asc ? " v" : " ^";
+      }
+
+      sort_button.setAttribute("onclick", sort_function);
+      sort_button.innerHTML = button_text;
+      cell.appendChild(sort_button);
+    } else {
+      cell.innerHTML = header_labels[i];
+    }
     header.appendChild(cell);
   }
   table.appendChild(header);
@@ -826,6 +861,18 @@ function updateLedgerTable() {
     document.getElementById(input_fields[i] + "-input").value = "";
   }
 
+}
+
+function sortLedgerTable(field, asc, sort_button) {
+  if (asc) {
+    sort_button.setAttribute("onclick", sort_button.getAttribute("onclick").replace("true", "false"));
+  } else {
+    sort_button.setAttribute("onclick", sort_button.getAttribute("onclick").replace("false", "true"));
+  }
+
+  BUDGET.setLedgerSortParams(field, asc);
+  BUDGET.sortLedger();
+  updateLedgerTable();
 }
 
 function addTransaction() {
