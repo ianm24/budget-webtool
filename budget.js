@@ -98,33 +98,42 @@ class Ledger {
   }
 
   editTransaction(ledger_id, new_transaction) {
+    // Get old transaction and bucket values
     var old_transaction = this.transactions[ledger_id];
-    if (new_transaction.bucket != old_transaction.bucket ||
-      new_transaction.value != old_transaction.value ||
-      new_transaction.date != old_transaction.date
-    ) {
-      // TODO handle bucket, value, and before bucket changes
-      //Bucket change
-      //  old bucket
-      //    set next transaction's before val to the removed before val
-      //    repeat until all transactions after removal are updated
-      //    update old bucket's value
-      //  new bucket
-      //    find where transaction fits
-      //      go through bucket transactions until you find one with id after removed
-      //    get transaction with bt_id before this and set removed's bucket before and after accordingly
-      //    set transaction with id after removed's bucket before to removed's after and increase bt_id by 1; update page table entries
-      //      repeat until all transaction ids and bucket before/after values have been updated
-      //    update new bucket's value
-      //  remove transaction from old bucket list
-      //  add transaction to its index in the new bucket list
-      //  update page table entry
-      //Value change
-      //Before Value change
-      return false;
+    var new_bucket_vals = [[old_transaction.bucket, old_transaction.bucket_after],
+    [new_transaction.bucket, new_transaction.bucket_after]];
+
+    // If this transaction's date is before the latest transaction, update future transactions
+    this.sortLedger("date", false);
+    var latest_ledger_id = Object.keys(this.transactions)[0];
+    var latest_transaction = this.transactions[latest_ledger_id];
+
+    if (Transaction.dateCompare(new_transaction, latest_transaction, true) < 0) {
+
+      if (old_transaction.bucket != new_transaction.bucket) {
+        // Update old bucket's transactions
+        new_bucket_vals[0][1] = this.removeTransaction(ledger_id);
+      }
+
+      // Put edited transaction where it belongs
+      this.transactions[ledger_id] = new_transaction;
+      this.sortLedger("date", false);
+
+      var adjacent_ledger_ids = this.getAdjacentTransactions(ledger_id);
+      var before_id = adjacent_ledger_ids[0];
+
+      var new_bucket_before = 0;
+      if (before_id != ledger_id) {
+        new_bucket_before = this.transactions[before_id];
+      }
+      this.transactions[ledger_id].bucket_before = new_bucket_before;
+
+      // update the rest of the transactions in this bucket
+      new_bucket_vals[1][1] = this.updateLedger(before_id);
+    } else {
+      this.transactions[ledger_id] = new_transaction;
     }
-    this.transactions[ledger_id] = new_transaction;
-    return true;
+    return new_bucket_vals;
   }
 
   // asc: true is sort should be in ascending order, false if descending
@@ -341,12 +350,14 @@ class Budget {
   }
 
   editTransaction(date, bucket, description, value, transaction_id) {
-    var new_transaction = new Transaction(transaction_id,
+    var new_transaction = new Transaction(Number(transaction_id.replace("_", "")),
       date, bucket, description, Number(value.toFixed(2)),
       this.ledger.transactions[transaction_id].bucket_before
     );
 
-    this.buckets[bucket].value = this.ledger.editTransaction(transaction_id, new_transaction);
+    var bucket_vals = this.ledger.editTransaction(transaction_id, new_transaction);
+    this.buckets[bucket_vals[0][0]].value = bucket_vals[0][1];
+    this.buckets[bucket_vals[1][0]].value = bucket_vals[1][1];
     this.sortLedger();
     return true;
   }
@@ -886,7 +897,7 @@ function editTransaction(transaction_id, edit_button) {
   var value_cell_inner = value_cell.innerHTML.replace("$", "");
   value_cell.innerHTML = "<input id='" + transaction_id + "-value_edit' type='number' step='0.01' old_value='" + Number(value_cell_inner) + "' Value='" + Number(value_cell_inner) + "'>";
 
-  // TODO Add cancel button under input field
+  // Add cancel button under input field
   var cancel_button = document.createElement("button")
   cancel_button.setAttribute("id", transaction_id + "_cancel");
   cancel_button.setAttribute("onclick", "cancelTransactionEdit(\"" + transaction_id + "\",this)");
