@@ -1,13 +1,48 @@
 /** @module BucketBudget */
-//===========================
-// BACKEND CLASSES/FUNCTIONS
-//===========================
 
-//===Start Budget Classes===
+//===Start Constants and Variables===
+/**
+ * List of fields that can be sorted by.
+ * @constant {string[]}
+ */
+const valid_sort_fields = ["id", "date", "bucket", "value"];
+
+/**
+ * The file types currently supported by the import functions.
+ * @constant {string[]}
+ */
+const valid_file_import_types = ["application/json"];
+
+//TODO add customizable formatters for different currencies
+/**
+ * Formats numbers to currency for proper display.
+ * @constant {Intl.NumberFormat}
+ */
+const formatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD'
+});
+
+/**
+ * @var {string} exportDataFile - The object URL of the exported budget data file.
+ * @inner
+ */
+var exportDataFile = null;
+
+/**
+ * The budget being modified by the HTML interface.
+ * @var {Budget} USER_BUDGET
+ * @inner
+ */
+var USER_BUDGET = new Budget();
+
+//===End Constands and Variables===
+
+//===Start Budget-related Classes===
 
 /**
  * Holds a budget bucket's name and value.
- * @module module:BucketBudget.Bucket
+ * @module module:BucketBudget~Bucket
  * @class
  */
 class Bucket {
@@ -20,14 +55,16 @@ class Bucket {
     /**
      * Name of the bucket.
      * @member {string} display_name
-     * @memberof module:BucketBudget.Bucket
+     * @memberof module:BucketBudget~Bucket
+     * @instance
      */
     this.display_name = display_name;
 
     /**
      * Value (amount of money) in the bucket rounded to 2 decimal places.
      * @member {number} value
-     * @memberof module:BucketBudget.Bucket
+     * @memberof module:BucketBudget~Bucket
+     * @instance
      */
     this.value = Number(value.toFixed(2));
   }
@@ -44,7 +81,7 @@ class Bucket {
 
 /**
  * Holds identifying and descriptive information about a ledger transaction.
- * @module BucketBudget.Transaction
+ * @module BucketBudget~Transaction
  * @class
  */
 class Transaction {
@@ -63,49 +100,56 @@ class Transaction {
     /**
      * Identifying number for the transaction.
      * @member {number} id
-     * @memberof module:BucketBudget.Transaction
+     * @memberof module:BucketBudget~Transaction
+     * @instance
      */
     this.id = id;
 
     /**
      * Date the transaction occurred in YYYY-MM-DD format.
      * @member {string} date
-     * @memberof module:BucketBudget.Transaction
+     * @memberof module:BucketBudget~Transaction
+     * @instance
      */
     this.date = date;
 
     /**
      * The bucket this transaction is in. Budget.buckets is used to get the Bucket object associated with this.
      * @member {string} bucket
-     * @memberof module:BucketBudget.Transaction
+     * @memberof module:BucketBudget~Transaction
+     * @instance
      */
     this.bucket = bucket;
 
     /**
      * Description of the transaction. Generally 128 characters or shorter.
      * @member {string} description
-     * @memberof module:BucketBudget.Transaction
+     * @memberof module:BucketBudget~Transaction
+     * @instance
      */
     this.description = description;
 
     /**
      * Value of the transaction rounded to 2 decimal places.
      * @member {number} value
-     * @memberof module:BucketBudget.Transaction
+     * @memberof module:BucketBudget~Transaction
+     * @instance
      */
     this.value = Number(value.toFixed(2));
 
     /**
      * Value of the associated bucket prior to this transaction.
      * @member {number} bucket_before
-     * @memberof module:BucketBudget.Transaction
+     * @memberof module:BucketBudget~Transaction
+     * @instance
      */
     this.bucket_before = Number(bucket_before.toFixed(2));
 
     /**
      * Value of the associated bucket after this transaction.
      * @member {number} bucket_after
-     * @memberof module:BucketBudget.Transaction
+     * @memberof module:BucketBudget~Transaction
+     * @instance
      */
     this.bucket_after = Number((this.bucket_before + this.value).toFixed(2));
   }
@@ -162,12 +206,9 @@ class Transaction {
   }
 }
 
-/** @constant {string[]} - List of fields that can be sorted by. */
-const valid_sort_fields = ["id", "date", "bucket", "value"];
-
 /**
  * Holds Transactions and sort parameters.
- * @module BucketBudget.Ledger
+ * @module BucketBudget~Ledger
  * @class
  */
 class Ledger {
@@ -181,28 +222,32 @@ class Ledger {
     /**
      * Transactions accessed by ledger ID.
      * @member {Dictionary<string,Transaction>} transactions
-     * @memberof module:BucketBudget.Ledger
+     * @memberof module:BucketBudget~Ledger
+     * @instance
      */
     this.transactions = {};
 
     /**
      * Counter used to determine the ledger and transaction IDs for new transactions.
      * @member {number} id_counter
-     * @memberof module:BucketBudget.Ledger
+     * @memberof module:BucketBudget~Ledger
+     * @instance
      */
     this.id_counter = 0;
 
     /**
      * The field the ledger is being sorted by.
      * @member {string} sort_field
-     * @memberof module:BucketBudget.Ledger
+     * @memberof module:BucketBudget~Ledger
+     * @instance
      */
     this.sort_field = "date";
 
     /**
      * True if ledger sorted in ascending order, false otherwise.
      * @member {boolean} sort_dir_asc
-     * @memberof module:BucketBudget.Ledger
+     * @memberof module:BucketBudget~Ledger
+     * @instance
      */
     this.sort_dir_asc = false;
   }
@@ -499,6 +544,7 @@ class Budget {
      * Buckets accessed by bucket ID.
      * @member {Dictionary<string,Bucket>} buckets
      * @memberof module:BucketBudget.Budget
+     * @instance
      */
     this.buckets = {};
 
@@ -506,6 +552,7 @@ class Budget {
      * The Budget's ledger.
      * @member {Ledger} ledger
      * @memberof module:BucketBudget.Budget
+     * @instance
      */
     this.ledger = new Ledger();
   }
@@ -639,7 +686,8 @@ class Budget {
     return this.ledger.setLedgerSortParams(sort_field, sort_dir_asc);
   }
 }
-//===End Budget Classes===
+
+//===End Budget-related Classes===
 
 // ===Start File Import/Export Functions===
 
@@ -793,12 +841,6 @@ function importJSON(object) {
 }
 
 /**
- * @var {string} exportDataFile - The object URL of the exported budget data file.
- * @module module:BucketBudget.exportDataFile
- */
-var exportDataFile = null;
-
-/**
  * Exports a Budget to a JSON file and creates an object URL for it, saving it in exportDataFile.
  * @param {Budget} budget - The Budget to export.
  * @module module:BucketBudget.exportJSON()
@@ -813,34 +855,10 @@ function exportJSON(budget) {
 
   exportDataFile = window.URL.createObjectURL(data);
 }
+
 // ===End File Import/Export Functions===
 
-// ==================
-// FUNCTIONS FOR HTML
-// ==================
-
-/**
- * @var {Budget} USER_BUDGET - The budget being modified by the HTML interface.
- * @module module:BucketBudget.USER_BUDGET
- */
-var USER_BUDGET = new Budget();
-
-//TODO add customizable formatters for different currencies
-/**
- * @var {Intl.NumberFormat} formatter - Formats numbers to currency for proper display.
- * @module module:BucketBudget.formatter
- */
-const formatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD'
-});
-
-/**
- * @constant {string[]} valid_file_import_types - The file types currently supported by the import functions.
- * @module module:BucketBudget.valid_file_import_types
- */
-const valid_file_import_types = ["application/json"];
-
+// ===Start Front-end/HTML Functions===
 
 /**
  * Runs when import button is pressed.
@@ -1396,3 +1414,5 @@ function confirmTransactionEdit(transaction_id) {
   // Propogate changes to visual ledger.
   updateLedgerTable();
 }
+
+// ===End Front-end/HTML Functions===
