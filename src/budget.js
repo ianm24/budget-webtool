@@ -904,10 +904,10 @@ function importData() {
   });
   file_read_promise.then(
     function () {
-      // Propogate changes to bucket table.
+      // Propagate changes to bucket table.
       updateBucketTable();
 
-      // Propogate changes to visual ledger.
+      // Propagate changes to visual ledger.
       updateLedgerTable();
     },
     function (error) {
@@ -1023,7 +1023,7 @@ function addBucket() {
     return;
   }
 
-  // Propogate changes to bucket table.
+  // Propagate changes to bucket table.
   updateBucketTable();
 }
 
@@ -1036,7 +1036,7 @@ function addBucket() {
 function removeBucket(bucket_id) {
   USER_BUDGET.removeBucket(bucket_id);
 
-  // Propogate changes to bucket table.
+  // Propagate changes to bucket table.
   updateBucketTable();
 }
 
@@ -1099,10 +1099,10 @@ function confirmBucketEdit(bucket_id) {
     return;
   }
 
-  // Propogate changes to bucket table.
+  // Propagate changes to bucket table.
   updateBucketTable();
 
-  // Propogate changes to visual ledger.
+  // Propagate changes to visual ledger.
   updateLedgerTable();
 }
 
@@ -1236,7 +1236,7 @@ function sortLedgerTable(field, asc, sort_button) {
   USER_BUDGET.setLedgerSortParams(field, asc);
   USER_BUDGET.sortLedger();
 
-  // Propogate changes to visual ledger.
+  // Propagate changes to visual ledger.
   updateLedgerTable();
 }
 
@@ -1277,10 +1277,10 @@ function addTransaction() {
   var success = USER_BUDGET.addTransaction(transaction_date, transaction_bucket,
     transaction_desc, transaction_value);
 
-  // Propogate changes to visual ledger.
+  // Propagate changes to visual ledger.
   updateLedgerTable();
 
-  // Propogate changes to bucket table.
+  // Propagate changes to bucket table.
   updateBucketTable();
 }
 
@@ -1294,10 +1294,10 @@ function removeTransaction(transaction_id) {
   // Remove transaction.
   USER_BUDGET.removeTransaction(transaction_id);
 
-  // Propogate changes to visual ledger.
+  // Propagate changes to visual ledger.
   updateLedgerTable();
 
-  // Propogate changes to bucket table.
+  // Propagate changes to bucket table.
   updateBucketTable();
 }
 
@@ -1408,10 +1408,10 @@ function confirmTransactionEdit(transaction_id) {
 
   USER_BUDGET.editTransaction(new_transaction_date, new_transaction_bucket, new_transaction_desc, new_transaction_value, transaction_id);
 
-  // Propogate changes to bucket table.
+  // Propagate changes to bucket table.
   updateBucketTable();
 
-  // Propogate changes to visual ledger.
+  // Propagate changes to visual ledger.
   updateLedgerTable();
 }
 
