@@ -1,43 +1,5 @@
 /** @module BucketBudget */
 
-//===Start Constants and Variables===
-/**
- * List of fields that can be sorted by.
- * @constant {string[]}
- */
-const valid_sort_fields = ["id", "date", "bucket", "value"];
-
-/**
- * The file types currently supported by the import functions.
- * @constant {string[]}
- */
-const valid_file_import_types = ["application/json"];
-
-//TODO add customizable formatters for different currencies
-/**
- * Formats numbers to currency for proper display.
- * @constant {Intl.NumberFormat}
- */
-const formatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD'
-});
-
-/**
- * @var {string} exportDataFile - The object URL of the exported budget data file.
- * @inner
- */
-var exportDataFile = null;
-
-/**
- * The budget being modified by the HTML interface.
- * @var {Budget} USER_BUDGET
- * @inner
- */
-var USER_BUDGET = new Budget();
-
-//===End Constands and Variables===
-
 //===Start Budget-related Classes===
 
 /**
@@ -1416,3 +1378,41 @@ function confirmTransactionEdit(transaction_id) {
 }
 
 // ===End Front-end/HTML Functions===
+
+//===Start Constants and Variables===
+/**
+ * List of fields that can be sorted by.
+ * @constant {string[]}
+ */
+const valid_sort_fields = ["id", "date", "bucket", "value"];
+
+/**
+ * The file types currently supported by the import functions.
+ * @constant {string[]}
+ */
+const valid_file_import_types = ["application/json"];
+
+//TODO add customizable formatters for different currencies
+/**
+ * Formats numbers to currency for proper display.
+ * @constant {Intl.NumberFormat}
+ */
+const formatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD'
+});
+
+/**
+ * @var {string} exportDataFile - The object URL of the exported budget data file.
+ * @inner
+ */
+var exportDataFile = null;
+
+/**
+ * The budget being modified by the HTML interface.
+ * @var {Budget} USER_BUDGET
+ * @inner
+ */
+var USER_BUDGET = new Budget();
+
+//===End Constands and Variables===
