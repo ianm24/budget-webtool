@@ -495,6 +495,98 @@ class Ledger {
 }
 
 /**
+ * Holds Buckets and percentages for income filter.
+ * @module BucketBudget~IncomeFilter
+ * @class
+ */
+class IncomeFilter {
+  /**
+   * IncomeFilter Constructer.
+   * Creates empty IncomeFilter if parameters invalid or not given.
+   * @param {string} display_name - The display name of the IncomeFilter.
+   * This will be used as the description for transactions added using the filter.
+   * @param {string[]} [bucket_ids=[]] - The ID of each Bucket that the income will go into.
+   * bucket_ids[i] should correspond with percentages[i].
+   * @param {number[]} [percentages=[]] - The percentages of income to go into each bucket rounded to 2 decimal places.
+   * percentages[i] should correspond with bucket_ids[i].
+   * @param {string} rounding_bucket - The ID of the bucket that will be affected by any rounding errors, positive or negative.
+   */
+  constructor(display_name, bucket_ids = [], percentages = [], rounding_bucket) {
+    /**
+     * Name of the IncomeFilter.
+     * This will be used as the description for transactions added using the filter.
+     * @member {string} display_name
+     * @memberof module:BucketBudget~IncomeFilter
+     * @instance
+     */
+    this.display_name = display_name;
+
+    /**
+     * Filter percentages accessed by Bucket ID.
+     * @member {Dictionary<string,number>} bucket_percentages
+     * @memberof module:BucketBudget~IncomeFilter
+     * @instance
+     */
+    this.bucket_percentages = {};
+    this.setBucketPercentages(bucket_ids, percentages);
+
+    /**
+     * The ID of the bucket that will be affected by any rounding errors, positive or negative.
+     * @member {string} bucket_percentages
+     * @memberof module:BucketBudget~IncomeFilter
+     * @instance
+     */
+    this.rounding_bucket = "";
+    this.setRoundingBucket(rounding_bucket);
+  }
+
+  /**
+   * Sets percentages to the filter.
+   * @param {string[]} bucket_ids - The ID of each Bucket that the income will go into.
+   * bucket_ids[i] should correspond with percentages[i].
+   * @param {number[]} percentages - The percentages of income to go into each bucket rounded to 2 decimal places.
+   * percentages[i] should correspond with bucket_ids[i].
+   * @return {boolean} False if percentages don't add to 100.00 or bucket_ids.length != percentages.length, True otherwise.
+   */
+  setBucketPercentages(bucket_ids, percentages) {
+    // Verify array sizes are equal
+    if (bucket_ids.length != percentages.length) {
+      return false;
+    }
+
+    // Get the sum of the percentages and make sure it adds to 100.00
+    var percentages_sum = percentages.reduce(function (sum, curr_val) {
+      return Number((sum + curr_val).toFixed(2))
+    }, 0);
+
+    if (percentages_sum != 100.00) {
+      return false;
+    }
+
+    // Put the percentages in the filter
+    for (var i = 0; i < bucket_ids.length; i++) {
+      this.bucket_percentages[bucket_ids[i]] = percentages[i];
+    }
+
+    return true;
+  }
+
+  /**
+   * Sets the rounding bucket
+   * @param {string} rounding_bucket - The ID of the bucket that will be affected by any rounding errors, positive or negative.
+   * @returns {boolean} False if rounding bucket is not used in filter, true otherwise.
+   */
+  setRoundingBucket(rounding_bucket) {
+    if (!Object.keys(this.bucket_percentages).includes(rounding_bucket)) {
+      return false;
+    }
+
+    this.rounding_bucket = rounding_bucket;
+    return true;
+  }
+}
+
+/**
  * Holds the buckets and ledger for the budget.
  * @module module:BucketBudget.Budget
  * @class
@@ -509,6 +601,14 @@ class Budget {
      * @instance
      */
     this.buckets = {};
+
+    /**
+     * IncomeFilters accessed by filter ID.
+     * @member {Dictionary<string,IncomeFilter>} income_filters
+     * @memberof module:BucketBudget.Budget
+     * @instance
+     */
+    this.income_filters = {};
 
     /**
      * The Budget's ledger.
@@ -539,7 +639,7 @@ class Budget {
   /**
    * Removes a bucket from the dictionary.
    * @param {string} bucket_id - The bucket ID (key) of the bucket to remove.
-   * @returns {boolean} False if bucket ID is a duplicate, true otherwise.
+   * @returns {boolean} False if bucket ID doesnt exist, true otherwise.
    */
   removeBucket(bucket_id) {
     if (this.buckets[bucket_id] == null) {
@@ -570,6 +670,107 @@ class Budget {
     Object.defineProperty(this.buckets, new_bucket_id, Object.getOwnPropertyDescriptor(this.buckets, bucket_id));
     this.buckets[new_bucket_id].display_name = new_bucket_name;
     delete this.buckets[bucket_id];
+
+    return true;
+  }
+
+  /**
+   * Attempts to add a new IncomeFilter.
+   * @param {string} filter_name - The name of the IncomeFilter.
+   * @param {string[]} bucket_ids - The ID of each Bucket that the income will go into.
+   * bucket_ids[i] should correspond with percentages[i].
+   * @param {number[]} percentages - The percentages of income to go into each bucket rounded to 2 decimal places.
+   * percentages[i] should correspond with bucket_ids[i].
+   * @param {string} rounding_bucket - The ID of the bucket that will be affected by any rounding errors, positive or negative.
+   * @return {boolean} False if percentages don't add to 100.00, bucket_ids.length != percentages.length,
+   * bucket_ids/rounding bucket are not present within the budget, rounding bucket not in filter,
+   * or filter_name is duplicate, True otherwise.
+   */
+  addIncomeFilter(filter_name, bucket_ids, percentages, rounding_bucket) {
+    // Check that filter ID is not duplicate.
+    var filter_id = filter_name.toLowerCase().replaceAll(" ", "_");
+    if (this.income_filters[filter_id] != null) {
+      return false;
+    }
+
+    // Check that bucket_ids are valid.
+    for (var i = 0; i < bucket_ids.length; i++) {
+      if (this.buckets[bucket_ids[i]] == null) {
+        return false;
+      }
+    }
+
+    // Check that the rounding_bucket is valid.
+    if (this.buckets[rounding_bucket] == null) {
+      return false;
+    }
+
+    var new_income_filter = new IncomeFilter(filter_name, bucket_ids, percentages, rounding_bucket);
+    if (JSON.stringify(new_income_filter.bucket_percentages) == "{}" || new_income_filter.rounding_bucket == "") {
+      return false;
+    }
+
+    // Add valid income filter to the dictionary
+    this.income_filters[filter_id] = new_income_filter;
+    return true;
+  }
+
+  /**
+   * Removes an IncomeFilter from the dictionary.
+   * @param {string} filter_id - The filter ID (key) of the filter to remove.
+   * @returns {boolean} False if filter ID doesn't exist, true otherwise.
+   */
+  removeIncomeFilter(filter_id) {
+    if (this.income_filters[filter_id] == null) {
+      // Can't remove nonexistent filters.
+      return false;
+    }
+    delete this.income_filters[filter_id];
+    return true;
+  }
+
+  /**
+   * Attempts to edit an existing IncomeFilter in the dictionary.
+   * @param {string} filter_id - The filter ID (key) of the filter to remove.
+   * @param {string} new_filter_name - The name of the IncomeFilter.
+   * @param {string[]} bucket_ids - The ID of each Bucket that the income will go into.
+   * bucket_ids[i] should correspond with percentages[i].
+   * @param {number[]} percentages - The percentages of income to go into each bucket rounded to 2 decimal places.
+   * percentages[i] should correspond with bucket_ids[i].
+   * @param {string} rounding_bucket - The ID of the bucket that will be affected by any rounding errors, positive or negative.
+   * @return {boolean} False if percentages don't add to 100.00, bucket_ids.length != percentages.length,
+   * bucket_ids are not present within the budget, or filter_name is duplicate, True otherwise.
+   */
+  editIncomeFilter(filter_id, new_filter_name, bucket_ids, percentages, rounding_bucket) {
+    // Check that filter ID is not duplicate.
+    var new_filter_id = new_filter_name.toLowerCase().replaceAll(" ", "_");
+    if (this.income_filters[new_filter_id] != null) {
+      return false;
+    }
+
+    // Check that bucket_ids are valid.
+    for (var i = 0; i < bucket_ids.length; i++) {
+      if (this.buckets[bucket_ids[i]] == null) {
+        return false;
+      }
+    }
+
+    // Check that the rounding_bucket is valid.
+    if (this.buckets[rounding_bucket] == null) {
+      return false;
+    }
+
+    // Make sure updated filter values are valid
+    var bp_success = this.income_filters[filter_id].setBucketPercentages(bucket_ids, percentages);
+    var rb_success = this.income_filters[filter_id].setRoundingBucket(rounding_bucket);
+    if (!(bp_success && rb_success)) {
+      return false;
+    }
+
+    // Update key and display name (using defineProperty preserves order of filters).
+    Object.defineProperty(this.income_filters, new_filter_id, Object.getOwnPropertyDescriptor(this.income_filters, filter_id));
+    this.income_filters[new_filter_id].display_name = new_filter_name;
+    delete this.income_filters[filter_id];
 
     return true;
   }
@@ -651,7 +852,7 @@ class Budget {
 
 //===End Budget-related Classes===
 
-// ===Start File Import/Export Functions===
+//===Start File Import/Export Functions===
 
 /**
  * Imports a budget from a JSON object.
@@ -674,29 +875,100 @@ function importJSON(object) {
   } else {
     var bucket_keys = Object.keys(object.buckets);
     for (var i = 0; i < bucket_keys.length; i++) {
-      var curr_bucket = object.buckets[bucket_keys[i]];
+      var curr_filter = object.buckets[bucket_keys[i]];
       var name = "";
       var val = 0;
 
       // Bucket input validation.
-      if (curr_bucket.display_name == null || typeof (curr_bucket.display_name) != "string") {
+      if (curr_filter.display_name == null || typeof (curr_filter.display_name) != "string") {
         invalid_JSON = true;
         name = "INVALID_JSON_BUCKET_" + i;
       } else {
-        name = curr_bucket.display_name;
+        name = curr_filter.display_name;
       }
 
-      if (curr_bucket.value == null || typeof (curr_bucket.value) != "number") {
+      if (curr_filter.value == null || typeof (curr_filter.value) != "number") {
         invalid_JSON = true;
         val = 0
       } else {
-        val = curr_bucket.value;
+        val = curr_filter.value;
       }
       var success = imported_budget.addBucket(name, val);
       if (!success) {
         invalid_JSON = true;
         imported_budget.addBucket("INVALID_JSON_BUCKET_" + i, val);
       }
+    }
+  }
+
+  // TODO Add all the IncomeFilters.
+  if (!object.income_filters) {
+    invalid_JSON = true;
+  } else {
+    var filter_keys = Object.keys(object.income_filters);
+    for (var i = 0; i < filter_keys.length; i++) {
+      var curr_filter = object.income_filters[filter_keys[i]];
+      var name = "";
+      var bucket_percentages = {};
+      var rounding_bucket = "";
+
+      // IncomeFilter display name input validation.
+      if (curr_filter.display_name == null || typeof (curr_filter.display_name) != "string") {
+        invalid_JSON = true;
+        name = "INVALID_JSON_INCOME_FILTER_" + i;
+      } else {
+        name = curr_filter.display_name;
+      }
+
+      // IncomeFilter bucket percentages input validation.
+      if (curr_filter.bucket_percentages == null) {
+        invalid_JSON = true;
+        bucket_percentages["INVALID_JSON_INCOME_FILTER_BUCKET_PERCENTAGE"] = 100.00;
+      } else {
+        // Verify bucket percentages are valid.
+        var filter_bucket_id_keys = Object.keys(object.income_filters.bucket_percentages);
+        var bucket_ids = [];
+        var percentages = [];
+        var percentage_sum = 0;
+        for (var j = 0; j < filter_bucket_id_keys.length; j++) {
+          var curr_bucket_id = filter_bucket_id_keys[j];
+          var curr_percentage = object.income_filters.bucket_percentages[curr_bucket_id];
+
+          // Verify bucket ID is valid
+          if (typeof (curr_bucket_id) != "string" || imported_budget.buckets[curr_bucket_id] == null) {
+            invalid_JSON = true;
+            curr_bucket_id = "INVALID_JSON_INCOME_FILTER_BUCKET" + j;
+          }
+
+          // Verify percentage is valid
+          if (typeof (curr_percentage) != "number" || curr_percentage != Number(curr_percentage.toFixed(2))) {
+            invalid_JSON = true;
+            curr_percentage = 0.00;
+          }
+
+          bucket_ids.push(curr_bucket_id);
+          percentages.push(curr_percentage);
+          percentage_sum = Number((percentage_sum + curr_percentage).toFixed(2));
+        }
+
+        // Verify percentage sum is valid
+        if (percentage_sum != 100.00) {
+          bucket_ids.push("INVALID_JSON_INCOME_FILTER_SUM");
+          percentages.push(Number((100.00 - percentage_sum).toFixed(2)));
+        }
+      }
+
+      // IncomeFilter rounding bucket input validation.
+      if (curr_filter.rounding_bucket == null ||
+        typeof (curr_filter.rounding_bucket) != "string" ||
+        !bucket_ids.includes(curr_filter.rounding_bucket)) {
+        invalid_JSON = true;
+        rounding_bucket = "INVALID_JSON_INCOME_FILTER_ROUNDING_BUCKET" + i;
+      } else {
+        rounding_bucket = curr_filter.rounding_bucket;
+      }
+
+      imported_budget.addIncomeFilter(name, bucket_ids, percentages, rounding_bucket);
     }
   }
 
@@ -730,7 +1002,7 @@ function importJSON(object) {
       var curr_transaction = object.ledger.transactions[import_ledger_keys[i]];
       var curr_id = invalid_id_counter;
       var curr_date = "0001-01-01";
-      var curr_bucket = "INVALID_JSON_TRANSACTION_BUCKET";
+      var curr_filter = "INVALID_JSON_TRANSACTION_BUCKET";
       var curr_bucket_before = 0;
       var curr_val = 0;
       var curr_desc = "INVALID_JSON_DESCRIPTION";
@@ -756,9 +1028,9 @@ function importJSON(object) {
         invalid_JSON = true;
       } else if (Object.keys(imported_budget.buckets).indexOf(curr_transaction.bucket)) {
         invalid_JSON = true;
-        curr_bucket = curr_transaction.bucket;
+        curr_filter = curr_transaction.bucket;
       } else {
-        curr_bucket = curr_transaction.bucket;
+        curr_filter = curr_transaction.bucket;
       }
 
       // Check bucket before.
@@ -782,7 +1054,7 @@ function importJSON(object) {
         curr_desc = curr_transaction.description;
       }
 
-      imported_transactions[import_ledger_keys[i]] = new Transaction(curr_id, curr_date, curr_bucket,
+      imported_transactions[import_ledger_keys[i]] = new Transaction(curr_id, curr_date, curr_filter,
         curr_desc, curr_val, curr_bucket_before)
     }
     imported_budget.ledger.transactions = imported_transactions;
@@ -909,9 +1181,11 @@ function updateBucketTable() {
   var table = document.getElementById("bucket-table");
   table.innerHTML = "";
 
-  // Empty Select.
-  var select = document.getElementById("bucket-input");
-  select.innerHTML = "<option value='' disabled selected>Select a bucket</option>";
+  // Empty bucket selects.
+  var bucket_selects = document.getElementsByClassName("bucket-input");
+  for (var i = 0; i < bucket_selects.length; i++) {
+    bucket_selects[i].innerHTML = "<option value='' disabled selected>Select a bucket</option>";
+  }
 
   // Add header.
   var header_labels = ["Bucket", "Value", "", ""];
@@ -953,12 +1227,14 @@ function updateBucketTable() {
     entry.appendChild(remove_button);
     table.appendChild(entry);
 
-    // Update transaction bucket selector TODO have this update any select with this id (change to class).
+    // Update every bucket selector.
     var select_option = document.createElement('option');
     select_option.setAttribute("value", bucket_id);
     select_option.innerHTML = bucket.display_name;
 
-    select.appendChild(select_option);
+    for (var i = 0; i < bucket_selects.length; i++) {
+      bucket_selects[i].appendChild(select_option.cloneNode(true));
+    }
   }
 
   // Empty new bucket fields.
@@ -1028,7 +1304,7 @@ function editBucket(bucket_id, edit_button) {
  * Runs when a cancel button in the HTML bucket table is pressed.
  * Returns the row of the table to displaying the original bucket name.
  * @param {string} bucket_id - ID (key) of the bucket being edited.
- * @param {any} cancel_button - The cancel button that was pressed.
+ * @param {Object} cancel_button - The cancel button that was pressed.
  * @module module:BucketBudget.cancelBucketEdit()
  */
 function cancelBucketEdit(bucket_id, cancel_button) {
@@ -1066,6 +1342,117 @@ function confirmBucketEdit(bucket_id) {
 
   // Propagate changes to visual ledger.
   updateLedgerTable();
+}
+
+/**
+ * Runs when add filter button is pressed.
+ * Takes the name of the filter, buckets, and percentages and adds an income filter.
+ * @module module:BucketBudget.addIncomeFilter()
+ */
+function addIncomeFilter() {
+  // Get filter name.
+  var new_filter_name = document.getElementById("new-filter-name").value;
+  if (new_filter_name == "") {
+    alert("Please enter a name for the new filter.");
+    return;
+  }
+
+  // Get all the buckets, percentages, and rounding bucket
+  var filter_buckets = document.getElementsByClassName("bucket-filter-input");
+  var filter_percentages = document.getElementsByClassName("percent-filter-input");
+  var filter_rounding_radios = document.getElementsByClassName("rounding-filter-input");
+
+  var bucket_ids = [];
+  var percentages = [];
+  var rounding_bucket = "";
+  for (var i = 0; i < filter_buckets.length; i++) {
+    bucket_ids.push(filter_buckets[i].value);
+    percentages.push(Number(Number(filter_percentages[i].value).toFixed(2)));
+    if (filter_rounding_radios[i].checked) {
+      rounding_bucket = filter_buckets[i].value;
+    }
+  }
+
+  var success = USER_BUDGET.addIncomeFilter(new_filter_name, bucket_ids,
+    percentages, rounding_bucket);
+
+  // If filter name already exists or percentages dont add to 100.00, alert user.
+  if (!success) {
+    alert("Please make sure the income filter percentages add to 100.00, all buckets are selected and filter name is not a duplicate.");
+    return;
+  }
+
+  // TODO Update filter selector and clear new income filter fields.
+  // updateBucketTable();
+
+  // Clear new income filter fields.
+  var table = document.getElementById("income-filter-table").children[0];
+  var header_row = table.children[0];
+  var input_row = table.children[1];
+
+  var bucket = input_row.children[0].children[0];
+  var percentage = input_row.children[1].children[0];
+  var rounding_radio = input_row.children[2].children[0];
+  var button = input_row.children[3].children[0];
+
+  button.innerHTML = "Add Bucket to Filter";
+  button.setAttribute("onclick", "addBucketToFilter(this)");
+  bucket.value = "";
+  percentage.value = "";
+  rounding_radio.checked = true;
+
+  var new_table = document.createElement("tbody");
+  new_table.appendChild(header_row);
+  new_table.appendChild(input_row);
+
+  table.remove();
+  document.getElementById("income-filter-table").appendChild(new_table);
+  document.getElementById("new-filter-name").value = "";
+}
+
+/**
+ * Adds new bucket input row to income filter.
+ * @param {Object} new_bucket_button - The button that was pressed
+ * @module module:BucketBudget.addBucketToFilter()
+ */
+function addBucketToFilter(new_bucket_button) {
+  // Add new input row for filter.
+  var table = new_bucket_button.parentElement.parentElement.parentElement;
+
+  var row = document.createElement("tr");
+
+  var bucket = document.createElement("th");
+  var percentage = document.createElement("th");
+  var rounding_radio = document.createElement("th");
+  var button = document.createElement("th");
+
+  bucket.appendChild(document.getElementsByClassName("bucket-input")[0].cloneNode(true));
+  percentage.appendChild(document.getElementsByClassName("percent-filter-input")[0].cloneNode(true));
+  rounding_radio.appendChild(document.getElementsByClassName("rounding-filter-input")[0].cloneNode(true));
+  button.appendChild(new_bucket_button.cloneNode(true));
+
+  bucket.children[0].value = "";
+  percentage.children[0].value = "";
+  rounding_radio.children[0].checked = false;
+
+  row.appendChild(bucket);
+  row.appendChild(percentage);
+  row.appendChild(rounding_radio);
+  row.appendChild(button);
+
+  table.appendChild(row);
+
+  // Update the button to be remove.
+  new_bucket_button.innerHTML = "Remove Bucket from Filter";
+  new_bucket_button.setAttribute("onclick", "removeBucketFromFilter(this)");
+}
+
+function removeBucketFromFilter(remove_button) {
+  // Remove the row from the table
+  var remove_row = remove_button.parentElement.parentElement;
+  remove_row.remove();
+
+  delete remove_row;
 }
 
 /**
@@ -1172,7 +1559,7 @@ function updateLedgerTable() {
   }
 
   // Empty new transaction fields.
-  var input_fields = ["date", "bucket", "desc", "value"];
+  var input_fields = ["date", "bucket-transaction", "desc", "value"];
   for (var i = 0; i < input_fields.length; i++) {
     document.getElementById(input_fields[i] + "-input").value = "";
   }
@@ -1210,7 +1597,7 @@ function sortLedgerTable(field, asc, sort_button) {
 function addTransaction() {
   // Get each field for transaction.
   var transaction_date = document.getElementById("date-input").value;
-  var transaction_bucket = document.getElementById("bucket-input").value;
+  var transaction_bucket = document.getElementById("bucket-transaction-input").value;
   var transaction_desc = document.getElementById("desc-input").value;
   var transaction_value = Number(document.getElementById("value-input").value);
   if (transaction_date == "") {
@@ -1278,7 +1665,7 @@ function editTransaction(transaction_id, edit_button) {
 
   var bucket_cell = document.getElementById(transaction_id + "-bucket");
   var bucket_cell_value = bucket_cell.innerHTML;
-  var bucket_select_options = document.getElementById("bucket-input").innerHTML.replace(">" + bucket_cell_value, "selected='true'>" + bucket_cell_value);
+  var bucket_select_options = document.getElementById("bucket-transaction-input").innerHTML.replace(">" + bucket_cell_value, "selected='true'>" + bucket_cell_value);
   var bucket_cell_inner = "<select id='" + transaction_id + "-bucket_edit' old_value='" + bucket_cell_value + "' Value='" + bucket_cell_value + "'>";
   bucket_cell.innerHTML = bucket_cell_inner + bucket_select_options + "</select>";
 
