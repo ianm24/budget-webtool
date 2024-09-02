@@ -563,6 +563,12 @@ class IncomeFilter {
       return false;
     }
 
+    // Don't allow using the same bucket twice
+    var hasDuplicates = (new Set(bucket_ids)).size !== bucket_ids.length;
+    if (hasDuplicates) {
+      return false;
+    }
+
     // Put the percentages in the filter
     for (var i = 0; i < bucket_ids.length; i++) {
       this.bucket_percentages[bucket_ids[i]] = percentages[i];
@@ -1378,11 +1384,11 @@ function addIncomeFilter() {
 
   // If filter name already exists or percentages dont add to 100.00, alert user.
   if (!success) {
-    alert("Please make sure the income filter percentages add to 100.00, all buckets are selected and filter name is not a duplicate.");
+    alert("Please make sure the income filter percentages add to 100.00, all buckets are selected and not repeated, and filter name is not a duplicate.");
     return;
   }
 
-  // TODO Update filter selector and clear new income filter fields.
+  // TODO Update filter selector
   // updateBucketTable();
 
   // Clear new income filter fields.
