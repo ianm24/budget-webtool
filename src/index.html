@@ -53,10 +53,20 @@
   <!-- add date input to apply to filter when using it -->
   <h2>Income Filter</h2>
   <div id="income-filter-section">
+    <div id="filter-preview">
+      <p>Preview Income Filter:</p>
+      <select id="filter-preview-input">
+        <option value="" disabled selected>Select a filter</option>
+      </select>
+      <input id="income-preview-input" type="number" step="0.01" placeholder="Income">
+      <button id="filter-preview-submit" onclick="incomeFilterCheck(true)">Preview Filter</button>
+      <button id="filter-use-submit" onclick="incomeFilterCheck(false)">Use Filter</button>
+    </div>
     <div id="new-filter">
       <p>Add New Income Filter:</p>
       <input id="new-filter-name" type="text" placeholder="Filter Name">
       <button id="new-transaction-submit" onclick="addIncomeFilter()">Add Filter</button>
+      <button id="reset-filter-table" onclick="updateIncomeFilters()">Reset Table</button>
     </div>
     <br>
     <table id="income-filter-table">
@@ -67,20 +77,20 @@
         <th></th>
       </tr>
       <tr>
-        <th>
+        <td>
           <select class="bucket-input bucket-filter-input">
             <option value="" disabled selected>Select a bucket</option>
           </select>
-        </th>
-        <th>
+        </td>
+        <td>
           <input class="percent-filter-input" type="number" step="0.05" placeholder="% of income">
-        </th>
-        <th>
-          <input class="rounding-filter-input" type="radio" name="filter-rounding-select">
-        </th>
-        <th>
+        </td>
+        <td>
+          <input class="rounding-filter-input" type="radio" name="filter-rounding-select" checked="true">
+        </td>
+        <td>
           <button id="new-bucket-filter" onclick="addBucketToFilter(this)">Add New Bucket to Filter</button>
-        </th>
+        </td>
       </tr>
     </table>
   </div>

@@ -932,13 +932,13 @@ function importJSON(object) {
         bucket_percentages["INVALID_JSON_INCOME_FILTER_BUCKET_PERCENTAGE"] = 100.00;
       } else {
         // Verify bucket percentages are valid.
-        var filter_bucket_id_keys = Object.keys(object.income_filters.bucket_percentages);
+        var filter_bucket_id_keys = Object.keys(curr_filter.bucket_percentages);
         var bucket_ids = [];
         var percentages = [];
         var percentage_sum = 0;
         for (var j = 0; j < filter_bucket_id_keys.length; j++) {
           var curr_bucket_id = filter_bucket_id_keys[j];
-          var curr_percentage = object.income_filters.bucket_percentages[curr_bucket_id];
+          var curr_percentage = curr_filter.bucket_percentages[curr_bucket_id];
 
           // Verify bucket ID is valid
           if (typeof (curr_bucket_id) != "string" || imported_budget.buckets[curr_bucket_id] == null) {
@@ -1147,6 +1147,9 @@ function importData() {
       // Propagate changes to bucket table.
       updateBucketTable();
 
+      // Propagate changes to income filters.
+      updateIncomeFilters();
+
       // Propagate changes to visual ledger.
       updateLedgerTable();
     },
@@ -1351,6 +1354,95 @@ function confirmBucketEdit(bucket_id) {
 }
 
 /**
+ * Updates the income filter select option.
+ * @module module:BucketBudget.updateIncomeFilters()
+ */
+function updateIncomeFilters() {
+  // Empty income filter inputs.
+  var filter_select = document.getElementById("filter-preview-input");
+  filter_select.innerHTML = "<option value='' disabled selected>Select a filter</option>";
+
+  document.getElementById("income-preview-input").value = "";
+
+  // Update the income filter selector.
+  var filter_keys = Object.keys(USER_BUDGET.income_filters);
+  for (var i = 0; i < filter_keys.length; i++) {
+    var filter_id = filter_keys[i];
+    var filter_name = USER_BUDGET.income_filters[filter_id].display_name;
+
+    var select_option = document.createElement('option');
+    select_option.setAttribute("value", filter_id);
+    select_option.innerHTML = filter_name;
+
+    filter_select.appendChild(select_option);
+  }
+
+  // Clear new income filter fields.
+  var table = document.getElementById("income-filter-table");
+  table.innerHTML = "";
+
+  var new_table = document.createElement("tbody");
+
+  // Header row.
+  var header_row = document.createElement("tr");
+
+  var bucket = document.createElement("th");
+  var percentage = document.createElement("th");
+  var rounding_radio = document.createElement("th");
+  var button = document.createElement("th");
+
+  bucket.innerHTML = "Bucket";
+  percentage.innerHTML = "Percentage";
+  rounding_radio.innerHTML = "Rounding Bucket?";
+
+  header_row.appendChild(bucket);
+  header_row.appendChild(percentage);
+  header_row.appendChild(rounding_radio);
+  header_row.appendChild(button);
+
+  // Input row.
+  var input_row = document.createElement("tr");
+
+  bucket = document.createElement("td");
+  percentage = document.createElement("td");
+  rounding_radio = document.createElement("td");
+  button = document.createElement("td");
+
+  bucket.appendChild(document.createElement("select"));
+  bucket.children[0].className = "bucket-input bucket-filter-input";
+  bucket.children[0].innerHTML = document.getElementById("bucket-transaction-input")
+    .cloneNode(true).innerHTML;
+
+  percentage.appendChild(document.createElement("input"));
+  percentage.children[0].className = "percent-filter-input";
+  percentage.children[0].type = "number";
+  percentage.children[0].step = "0.05";
+  percentage.children[0].placeholder = "% of income";
+
+  rounding_radio.appendChild(document.createElement("input"));
+  rounding_radio.children[0].className = "rounding-filter-input";
+  rounding_radio.children[0].type = "radio";
+  rounding_radio.children[0].name = "filter-rounding-select";
+  rounding_radio.children[0].checked = true;
+
+  button.appendChild(document.createElement("button"));
+  button.children[0].innerHTML = "Add Bucket to Filter";
+  button.children[0].setAttribute("onclick", "addBucketToFilter(this)");
+
+  input_row.appendChild(bucket);
+  input_row.appendChild(percentage);
+  input_row.appendChild(rounding_radio);
+  input_row.appendChild(button);
+
+  // Construct table
+  var new_table = document.createElement("tbody");
+  new_table.appendChild(header_row);
+  new_table.appendChild(input_row);
+
+  table.appendChild(new_table);
+}
+
+/**
  * Runs when add filter button is pressed.
  * Takes the name of the filter, buckets, and percentages and adds an income filter.
  * @module module:BucketBudget.addIncomeFilter()
@@ -1388,32 +1480,119 @@ function addIncomeFilter() {
     return;
   }
 
-  // TODO Update filter selector
-  // updateBucketTable();
+  // Update filter selector and reset income filter table
+  updateIncomeFilters();
+}
 
-  // Clear new income filter fields.
-  var table = document.getElementById("income-filter-table").children[0];
-  var header_row = table.children[0];
-  var input_row = table.children[1];
+/**
+ * Does input validation and amount calculations for input filters before preview or use.
+ * @param {boolean} preview_or_use - True if previewing filter, false if using filter.
+ * @module module:BucketBudget.incomeFilterCheck()
+ */
+function incomeFilterCheck(preview_or_use) {
+  // Validate input.
+  var filter_id = document.getElementById("filter-preview-input").value;
+  if (filter_id == "") {
+    alert("Please select an income filter to preview.");
+    return;
+  }
 
-  var bucket = input_row.children[0].children[0];
-  var percentage = input_row.children[1].children[0];
-  var rounding_radio = input_row.children[2].children[0];
-  var button = input_row.children[3].children[0];
+  var income = document.getElementById("income-preview-input").value;
+  income = Number(Number(income).toFixed(2));
+  if (income == "" || income < 0.01) {
+    alert("Please input a number of at least 0.01 into the income field before previewing.");
+    return;
+  }
 
-  button.innerHTML = "Add Bucket to Filter";
-  button.setAttribute("onclick", "addBucketToFilter(this)");
-  bucket.value = "";
-  percentage.value = "";
-  rounding_radio.checked = true;
+  // User income filter table to preview the filter with the specified income.
+  var filter = USER_BUDGET.income_filters[filter_id];
+
+  // Calculate money for each bucket beforehand in case of rounding
+  var filter_keys = Object.keys(filter.bucket_percentages);
+  var amounts = Array(filter_keys.length).fill(0);
+  var rounding_bucket_idx;
+  for (var i = 0; i < filter_keys.length; i++) {
+    var filter_key = filter_keys[i];
+    if (filter_key == filter.rounding_bucket) {
+      rounding_bucket_idx = i;
+    }
+    amounts[i] = Number(((filter.bucket_percentages[filter_key] / 100) * income).toFixed(2));
+  }
+
+  // Get the sum of the amounts to get the difference from income to apply to rounding bucket.
+  var amounts_sum = amounts.reduce(function (sum, curr_val) {
+    return Number((sum + curr_val).toFixed(2))
+  }, 0);
+  amounts[rounding_bucket_idx] += income - amounts_sum;
+
+  if (preview_or_use) {
+    previewIncomeFilter(filter_keys, amounts);
+  } else {
+    // TODO useIncomeFilter()
+  }
+}
+
+/**
+ * TODO Uses selected filter and income to preview amount of money going into each bucket.
+ * @param {string[]} bucket_ids - Array of bucket IDs to use with the filter.
+ * @param {Number[]} amounts - Monetary amounts for each bucket.
+ * @module module:BucketBudget.previewIncomeFilter()
+ */
+function previewIncomeFilter(bucket_ids, amounts) {
+  // Update table
+  var table = document.getElementById("income-filter-table");
+  table.innerHTML = "";
 
   var new_table = document.createElement("tbody");
-  new_table.appendChild(header_row);
-  new_table.appendChild(input_row);
 
-  table.remove();
-  document.getElementById("income-filter-table").appendChild(new_table);
-  document.getElementById("new-filter-name").value = "";
+  var row = document.createElement("tr");
+
+  var bucket = document.createElement("th");
+  var value = document.createElement("th");
+
+  bucket.innerHTML = "Bucket";
+  value.innerHTML = "Value";
+
+  row.appendChild(bucket);
+  row.appendChild(value);
+  table.appendChild(row);
+
+  for (var i = 0; i < bucket_ids.length; i++) {
+    row = document.createElement("tr");
+
+    bucket = document.createElement("td");
+    value = document.createElement("td");
+
+    bucket.innerHTML = USER_BUDGET.buckets[bucket_ids[i]].display_name;
+    value.innerHTML = formatter.format(amounts[i]);
+
+    row.appendChild(bucket);
+    row.appendChild(value);
+    table.appendChild(row);
+  }
+
+  table.appendChild(new_table);
+}
+
+/**
+ * TODO Uses selected filter and income to add money into the filter's buckets.
+ * @returns {any}
+ * @module module:BucketBudget.useIncomeFilter()
+ */
+function useIncomeFilter() {
+  // Validate input.
+  var filter_id = document.getElementById("filter-preview-input").value;
+  if (filter_id == "") {
+    alert("Please select an income filter to use.");
+    return;
+  }
+
+  var income = document.getElementById("income-preview-input").value;
+  income = Number(income.toFixed(2));
+  if (income == "" || income < 0.01) {
+    alert("Please input a number of at least 0.01 into the income field before using.");
+    return;
+  }
 }
 
 /**
@@ -1427,10 +1606,10 @@ function addBucketToFilter(new_bucket_button) {
 
   var row = document.createElement("tr");
 
-  var bucket = document.createElement("th");
-  var percentage = document.createElement("th");
-  var rounding_radio = document.createElement("th");
-  var button = document.createElement("th");
+  var bucket = document.createElement("td");
+  var percentage = document.createElement("td");
+  var rounding_radio = document.createElement("td");
+  var button = document.createElement("td");
 
   bucket.appendChild(document.getElementsByClassName("bucket-input")[0].cloneNode(true));
   percentage.appendChild(document.getElementsByClassName("percent-filter-input")[0].cloneNode(true));
