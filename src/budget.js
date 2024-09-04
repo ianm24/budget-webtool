@@ -143,6 +143,11 @@ class Transaction {
     // Get date and id sort values based on ascending or descending sort.
     var date_sort_val = Math.pow(-1, 1 + asc) * date_a + Math.pow(-1, asc) * date_b;
     var id_sort_val = Math.pow(-1, 1 + asc) * a.id + Math.pow(-1, asc) * b.id;
+
+    // For bucket renames, ignore date
+    if (a.date == "" || b.date == "") {
+      date_sort_val = 0;
+    }
     return date_sort_val + id_sort_val;
   }
 
@@ -477,7 +482,7 @@ class Ledger {
 
     var ledger_id = "_" + this.id_counter;
     var name_change_transaction = new Transaction(
-      ledger_id, "", new_bucket_id,
+      this.id_counter, "", new_bucket_id,
       "Bucket name change from \"" + bucket_name + "\" to \"" +
       new_bucket_name + "\"", 0, bucket_val
     );
@@ -590,6 +595,20 @@ class IncomeFilter {
     this.rounding_bucket = rounding_bucket;
     return true;
   }
+
+  /**
+   * Goes through each percentage in the filter and updates the bucket if applicable.
+   * @param {string} bucket_id - The ID of the bucket to rename.
+   * @param {string} new_bucket_id - The new ID for the bucket.
+   */
+  updateBucketName(bucket_id, new_bucket_id) {
+    if (this.bucket_percentages[bucket_id] != null) {
+      // Update key (using defineProperty preserves order of percentages).
+      Object.defineProperty(this.bucket_percentages, new_bucket_id,
+        Object.getOwnPropertyDescriptor(this.bucket_percentages, bucket_id));
+      delete this.bucket_percentages[bucket_id];
+    }
+  }
 }
 
 /**
@@ -671,6 +690,12 @@ class Budget {
 
     // Update bucket name in ledger.
     this.ledger.updateBucketName(this.buckets[bucket_id], new_bucket_id, new_bucket_name);
+
+    // Update bucket ID in income filters.
+    var filter_keys = Object.keys(this.income_filters);
+    for (var i = 0; i < filter_keys.length; i++) {
+      this.income_filters[filter_keys[i]].updateBucketName(bucket_id, new_bucket_id);
+    }
 
     // Update key and display name (using defineProperty preserves order of buckets).
     Object.defineProperty(this.buckets, new_bucket_id, Object.getOwnPropertyDescriptor(this.buckets, bucket_id));
@@ -1364,6 +1389,8 @@ function updateIncomeFilters() {
 
   document.getElementById("income-preview-input").value = "";
 
+  document.getElementById("date-filter-use-input").value = "";
+
   // Update the income filter selector.
   var filter_keys = Object.keys(USER_BUDGET.income_filters);
   for (var i = 0; i < filter_keys.length; i++) {
@@ -1493,15 +1520,24 @@ function incomeFilterCheck(preview_or_use) {
   // Validate input.
   var filter_id = document.getElementById("filter-preview-input").value;
   if (filter_id == "") {
-    alert("Please select an income filter to preview.");
+    alert("Please select an income filter.");
     return;
   }
 
   var income = document.getElementById("income-preview-input").value;
   income = Number(Number(income).toFixed(2));
   if (income == "" || income < 0.01) {
-    alert("Please input a number of at least 0.01 into the income field before previewing.");
+    alert("Please input a number of at least 0.01 into the income field.");
     return;
+  }
+
+  var transaction_date = "";
+  if (!preview_or_use) {
+    transaction_date = document.getElementById("date-filter-use-input").value;
+    if (transaction_date == "") {
+      alert("Please select a date for the filter transactions.");
+      return;
+    }
   }
 
   // User income filter table to preview the filter with the specified income.
@@ -1528,12 +1564,12 @@ function incomeFilterCheck(preview_or_use) {
   if (preview_or_use) {
     previewIncomeFilter(filter_keys, amounts);
   } else {
-    // TODO useIncomeFilter()
+    useIncomeFilter(filter_keys, amounts, transaction_date, filter_id);
   }
 }
 
 /**
- * TODO Uses selected filter and income to preview amount of money going into each bucket.
+ * Uses selected filter and income to preview amount of money going into each bucket.
  * @param {string[]} bucket_ids - Array of bucket IDs to use with the filter.
  * @param {Number[]} amounts - Monetary amounts for each bucket.
  * @module module:BucketBudget.previewIncomeFilter()
@@ -1575,24 +1611,28 @@ function previewIncomeFilter(bucket_ids, amounts) {
 }
 
 /**
- * TODO Uses selected filter and income to add money into the filter's buckets.
- * @returns {any}
+ * Uses selected filter and income to add money into the filter's buckets.
+ * @param {string[]} bucket_ids - Array of bucket IDs to use with the filter.
+ * @param {Number[]} amounts - Monetary amounts for each bucket.
+ * @param {string} transaction_date - Date the filter transactions occurred in YYYY-MM-DD format.
+ * @param {string} filter_id - ID (key) of the filter being used from USER_BUDGET.
  * @module module:BucketBudget.useIncomeFilter()
  */
-function useIncomeFilter() {
-  // Validate input.
-  var filter_id = document.getElementById("filter-preview-input").value;
-  if (filter_id == "") {
-    alert("Please select an income filter to use.");
-    return;
+function useIncomeFilter(bucket_ids, amounts, transaction_date, filter_id) {
+  var description = USER_BUDGET.income_filters[filter_id].display_name;
+
+  for (var i = 0; i < bucket_ids.length; i++) {
+    USER_BUDGET.addTransaction(transaction_date, bucket_ids[i],
+      description, amounts[i]);
   }
 
-  var income = document.getElementById("income-preview-input").value;
-  income = Number(income.toFixed(2));
-  if (income == "" || income < 0.01) {
-    alert("Please input a number of at least 0.01 into the income field before using.");
-    return;
-  }
+  // Empty preview/use inputs.
+  document.getElementById("filter-preview-input").value = "";
+  document.getElementById("income-preview-input").value = "";
+  document.getElementById("date-filter-use-input").value = "";
+
+  updateLedgerTable();
+  updateBucketTable();
 }
 
 /**
