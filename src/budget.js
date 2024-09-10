@@ -1404,6 +1404,24 @@ function updateIncomeFilters() {
     filter_select.appendChild(select_option);
   }
 
+  // Empty filter name input.
+  var filter_name_box = document.getElementById("new-filter-name");
+  filter_name_box.value = "";
+
+  // Reset add, edit, and reset buttons
+  var edit_button = document.getElementById("filter-edit-submit");
+  edit_button.style = "visibility: visible;";
+
+  var add_button = document.getElementById("filter-submit-edit");
+  if (add_button != null) {
+    add_button.setAttribute("id", "new-filter-submit");
+    add_button.setAttribute("onclick", "addIncomeFilter()");
+    add_button.innerHTML = "Add Filter";
+  }
+
+  var reset_button = document.getElementById("reset-filter-table");
+  reset_button.innerHTML = "Reset Table";
+
   // Clear new income filter fields.
   var table = document.getElementById("income-filter-table");
   table.innerHTML = "";
@@ -1454,6 +1472,7 @@ function updateIncomeFilters() {
 
   button.appendChild(document.createElement("button"));
   button.children[0].innerHTML = "Add Bucket to Filter";
+  button.children[0].id = "new-bucket-filter";
   button.children[0].setAttribute("onclick", "addBucketToFilter(this)");
 
   input_row.appendChild(bucket);
@@ -1500,6 +1519,134 @@ function addIncomeFilter() {
 
   var success = USER_BUDGET.addIncomeFilter(new_filter_name, bucket_ids,
     percentages, rounding_bucket);
+
+  // If filter name already exists or percentages dont add to 100.00, alert user.
+  if (!success) {
+    alert("Please make sure the income filter percentages add to 100.00, all buckets are selected and not repeated, and filter name is not a duplicate.");
+    return;
+  }
+
+  // Update filter selector and reset income filter table
+  updateIncomeFilters();
+}
+
+/**
+ * Runs when a remove filter button in the HTML income filter table is pressed.
+ * Removes the selected income filter from USER_BUDGET.
+ * @module module:BucketBudget.removeIncomeFilter()
+ */
+function removeIncomeFilter() {
+  // Validate input.
+  var filter_id = document.getElementById("filter-preview-input").value;
+  if (filter_id == "") {
+    alert("Please select an income filter to remove.");
+    return;
+  }
+
+  USER_BUDGET.removeIncomeFilter(filter_id);
+  updateIncomeFilters();
+}
+
+/**
+ * Runs when a edit filter button in the HTML income filter table is pressed.
+ * Enables editing the selected income filter using the income filter table.
+ * @param {Object} edit_button - The edit button that was pressed.
+ * @module module:BucketBudget.editIncomeFilter()
+ */
+function editIncomeFilter(edit_button) {
+  // Validate input.
+  var filter_id = document.getElementById("filter-preview-input").value;
+  if (filter_id == "") {
+    alert("Please select an income filter to edit.");
+    return;
+  }
+  var filter = USER_BUDGET.income_filters[filter_id];
+
+  // Clear the income filter table.
+  updateIncomeFilters();
+
+  // Change add filter button to a submit changes button.
+  var submit_button = document.getElementById("new-filter-submit");
+  submit_button.innerHTML = "Submit Changes";
+  submit_button.setAttribute("id", "filter-submit-edit");
+  submit_button.setAttribute("onclick", "confirmIncomeFilterEdit(this)");
+
+  // Change Reset Table button text to Cancel Edit
+  var cancel_button = document.getElementById("reset-filter-table");
+  cancel_button.innerHTML = "Cancel Edit";
+
+  // Set Filter Name.
+  var filter_name_box = document.getElementById("new-filter-name");
+  filter_name_box.value = filter.display_name;
+
+  // Set first input row
+  var bucket_ids = Object.keys(filter.bucket_percentages);
+
+  var table = document.getElementById("income-filter-table");
+
+  var input_row = table.children[0].children[1];
+
+  var bucket = input_row.children[0];
+  var percentage = input_row.children[1];
+  var rounding_radio = input_row.children[2];
+  var button = input_row.children[3];
+
+  bucket.children[0].value = bucket_ids[0];
+  percentage.children[0].value = filter.bucket_percentages[bucket_ids[0]];
+  if (bucket_ids[0] != filter.rounding_bucket) {
+    rounding_radio.checked = false;
+  }
+  button.children[0].innerHTML = "Remove Bucket from Filter";
+  button.children[0].setAttribute("onclick", "removeBucketFromFilter(this)");
+
+
+  // Fill income filter table with editable fields using existing filter values.
+  for (var i = 1; i < bucket_ids.length; i++) {
+    input_row = document.createElement("tr");
+
+    bucket = document.createElement("td");
+    percentage = document.createElement("td");
+    rounding_radio = document.createElement("td");
+    button = document.createElement("td");
+
+    bucket.appendChild(document.getElementsByClassName("bucket-input")[0].cloneNode(true));
+    percentage.appendChild(document.getElementsByClassName("percent-filter-input")[0].cloneNode(true));
+    rounding_radio.appendChild(document.getElementsByClassName("rounding-filter-input")[0].cloneNode(true));
+    button.appendChild(document.getElementById("new-bucket-filter").cloneNode(true));
+
+    bucket.children[0].value = bucket_ids[i];
+    percentage.children[0].value = filter.bucket_percentages[bucket_ids[i]];
+    if (bucket_ids[i] != filter.rounding_bucket) {
+      rounding_radio.children[0].checked = false;
+    }
+    button.children[0].innerHTML = "Remove Bucket from Filter";
+    button.children[0].setAttribute("onclick", "removeBucketFromFilter(this)");
+    button.children[0].className = "remove-bucket-filter";
+
+    input_row.appendChild(bucket);
+    input_row.appendChild(percentage);
+    input_row.appendChild(rounding_radio);
+    input_row.appendChild(button);
+
+    table.children[0].appendChild(input_row);
+  }
+
+  // Change final button to add a bucket to filter.
+  button.children[0].innerHTML = "Add New Bucket from Filter";
+  button.children[0].setAttribute("onclick", "addBucketToFilter(this)");
+
+  // Make edit button invisible.
+  edit_button.style = "visibility: hidden;";
+}
+
+/**
+ * Runs when a submit changes button in the HTML income filter table is pressed.
+ * Attempts to make the changes to the income filter if they are valid.
+ * @param {Object} confirm_button - The confirm button pressed.
+ * @module module:BucketBudget.confirmIncomeFilterEdit()
+ */
+function confirmIncomeFilterEdit(confirm_button) {
+  var success = USER_BUDGET.editIncomeFilter(filter_id, new_filter_name, bucket_ids, percentages, rounding_bucket);
 
   // If filter name already exists or percentages dont add to 100.00, alert user.
   if (!success) {
@@ -1669,6 +1816,8 @@ function addBucketToFilter(new_bucket_button) {
 
   // Update the button to be remove.
   new_bucket_button.innerHTML = "Remove Bucket from Filter";
+  new_bucket_button.className = "remove-bucket-filter";
+  new_bucket_button.id = "";
   new_bucket_button.setAttribute("onclick", "removeBucketFromFilter(this)");
 }
 

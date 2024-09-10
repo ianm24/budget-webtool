@@ -62,11 +62,13 @@
       <input id="date-filter-use-input" type="date" autocomplete="date">
       <button id="filter-preview-submit" onclick="incomeFilterCheck(true)">Preview Filter</button>
       <button id="filter-use-submit" onclick="incomeFilterCheck(false)">Use Filter</button>
+      <button id="filter-edit-submit" onclick="editIncomeFilter(this)">Edit Filter</button>
+      <button id="filter-remove-submit" onclick="removeIncomeFilter()">Remove Filter</button>
     </div>
     <div id="new-filter">
       <p>Add New Income Filter:</p>
       <input id="new-filter-name" type="text" placeholder="Filter Name">
-      <button id="new-transaction-submit" onclick="addIncomeFilter()">Add Filter</button>
+      <button id="new-filter-submit" onclick="addIncomeFilter()">Add Filter</button>
       <button id="reset-filter-table" onclick="updateIncomeFilters()">Reset Table</button>
     </div>
     <br>
