@@ -40,6 +40,41 @@ Returns the row of the table to displaying the original bucket name.</p>
 <dd><p>Runs when submit changes button in the HTML bucket table is pressed.
 Takes the new name of the bucket and changes it in USER_BUDGET if it isn&#39;t a duplicate.</p>
 </dd>
+<dt><a href="#BucketBudget.module_updateIncomeFilters_new">updateIncomeFilters()</a></dt>
+<dd><p>Updates the income filter select option.</p>
+</dd>
+<dt><a href="#BucketBudget.module_validateIncomeFilterInputs_new">validateIncomeFilterInputs()</a></dt>
+<dd><p>Run when add filter or submit changes for income filter button is pressed.
+Validates income filter inputs before adding or editing filter.</p>
+</dd>
+<dt><a href="#BucketBudget.module_addIncomeFilter_new">addIncomeFilter()</a></dt>
+<dd><p>Runs when add filter button is pressed after inputs are validated.
+Takes the name of the filter, buckets, and percentages and adds an income filter to USER_BUDGET.</p>
+</dd>
+<dt><a href="#BucketBudget.module_removeIncomeFilter_new">removeIncomeFilter()</a></dt>
+<dd><p>Runs when a remove filter button in the HTML income filter table is pressed.
+Removes the selected income filter from USER_BUDGET.</p>
+</dd>
+<dt><a href="#BucketBudget.module_editIncomeFilter_new">editIncomeFilter()</a></dt>
+<dd><p>Runs when the edit filter button in the HTML income filter table is pressed.
+Enables editing the selected income filter using the income filter table.</p>
+</dd>
+<dt><a href="#BucketBudget.module_confirmIncomeFilterEdit_new">confirmIncomeFilterEdit()</a></dt>
+<dd><p>Runs when a submit changes button in the HTML income filter table is pressed after validating input.
+Attempts to make the changes to the income filter in USER_BUDGET if they are valid.</p>
+</dd>
+<dt><a href="#BucketBudget.module_incomeFilterCheck_new">incomeFilterCheck()</a></dt>
+<dd><p>Does input validation and amount calculations for input filters before preview or use.</p>
+</dd>
+<dt><a href="#BucketBudget.module_previewIncomeFilter_new">previewIncomeFilter()</a></dt>
+<dd><p>Uses selected filter and income to preview amount of money going into each bucket.</p>
+</dd>
+<dt><a href="#BucketBudget.module_useIncomeFilter_new">useIncomeFilter()</a></dt>
+<dd><p>Uses selected filter and income to add money into the filter&#39;s buckets.</p>
+</dd>
+<dt><a href="#BucketBudget.module_addBucketToFilter_new">addBucketToFilter()</a></dt>
+<dd><p>Adds new bucket input row to income filter.</p>
+</dd>
 <dt><a href="#BucketBudget.module_updateLedgerTable_new">updateLedgerTable()</a></dt>
 <dd><p>Updates the HTML ledger table with the data in USER_BUDGET.
 If a bucket no longer exists, a transaction will display the bucket ID.</p>
@@ -109,11 +144,22 @@ Takes the new values for the transaction and changes it in USER_BUDGET if the fi
         * [.getAdjacentTransactions(ledger_id)](#module_BucketBudget..Ledger+getAdjacentTransactions) ⇒ <code>Array.&lt;string&gt;</code>
         * [.updateLedger(ledger_id)](#module_BucketBudget..Ledger+updateLedger) ⇒ <code>number</code>
         * [.updateBucketName(bucket, new_bucket_id, new_bucket_name)](#module_BucketBudget..Ledger+updateBucketName)
+    * [~IncomeFilter](#module_BucketBudget..IncomeFilter)
+        * [new IncomeFilter(display_name, [bucket_ids], [percentages], rounding_bucket)](#new_module_BucketBudget..IncomeFilter_new)
+        * [.display_name](#module_BucketBudget..IncomeFilter+display_name) : <code>string</code>
+        * [.bucket_percentages](#module_BucketBudget..IncomeFilter+bucket_percentages) : <code>Dictionary.&lt;string, number&gt;</code>
+        * [.bucket_percentages](#module_BucketBudget..IncomeFilter+bucket_percentages) : <code>string</code>
+        * [.setBucketPercentages(bucket_ids, percentages)](#module_BucketBudget..IncomeFilter+setBucketPercentages) ⇒ <code>boolean</code>
+        * [.setRoundingBucket(rounding_bucket)](#module_BucketBudget..IncomeFilter+setRoundingBucket) ⇒ <code>boolean</code>
+        * [.updateBucketName(bucket_id, new_bucket_id)](#module_BucketBudget..IncomeFilter+updateBucketName)
     * [~Budget](#module_BucketBudget..Budget)
         * [new Budget()](#new_module_BucketBudget..Budget_new)
         * [.addBucket(name, value)](#module_BucketBudget..Budget+addBucket) ⇒ <code>boolean</code>
         * [.removeBucket(bucket_id)](#module_BucketBudget..Budget+removeBucket) ⇒ <code>boolean</code>
         * [.editBucket(bucket_id, new_bucket_name)](#module_BucketBudget..Budget+editBucket) ⇒ <code>boolean</code>
+        * [.addIncomeFilter(filter_name, bucket_ids, percentages, rounding_bucket)](#module_BucketBudget..Budget+addIncomeFilter) ⇒ <code>boolean</code>
+        * [.removeIncomeFilter(filter_id)](#module_BucketBudget..Budget+removeIncomeFilter) ⇒ <code>boolean</code>
+        * [.editIncomeFilter(filter_id, new_filter_name, bucket_ids, percentages, rounding_bucket)](#module_BucketBudget..Budget+editIncomeFilter) ⇒ <code>boolean</code>
         * [.addTransaction(date, bucket, description, value)](#module_BucketBudget..Budget+addTransaction) ⇒ <code>boolean</code>
         * [.removeTransaction(transaction_id)](#module_BucketBudget..Budget+removeTransaction) ⇒ <code>boolean</code>
         * [.editTransaction(date, bucket, description, value, transaction_id)](#module_BucketBudget..Budget+editTransaction) ⇒ <code>boolean</code>
@@ -444,6 +490,90 @@ Goes through each transaction in the ledger and updates the bucket if applicable
 | new_bucket_id | <code>any</code> | The new ID for the bucket. |
 | new_bucket_name | <code>any</code> | The new display name for the bucket |
 
+<a name="module_BucketBudget..IncomeFilter"></a>
+
+### BucketBudget~IncomeFilter
+**Kind**: inner class of [<code>BucketBudget</code>](#module_BucketBudget)  
+
+* [~IncomeFilter](#module_BucketBudget..IncomeFilter)
+    * [new IncomeFilter(display_name, [bucket_ids], [percentages], rounding_bucket)](#new_module_BucketBudget..IncomeFilter_new)
+    * [.display_name](#module_BucketBudget..IncomeFilter+display_name) : <code>string</code>
+    * [.bucket_percentages](#module_BucketBudget..IncomeFilter+bucket_percentages) : <code>Dictionary.&lt;string, number&gt;</code>
+    * [.bucket_percentages](#module_BucketBudget..IncomeFilter+bucket_percentages) : <code>string</code>
+    * [.setBucketPercentages(bucket_ids, percentages)](#module_BucketBudget..IncomeFilter+setBucketPercentages) ⇒ <code>boolean</code>
+    * [.setRoundingBucket(rounding_bucket)](#module_BucketBudget..IncomeFilter+setRoundingBucket) ⇒ <code>boolean</code>
+    * [.updateBucketName(bucket_id, new_bucket_id)](#module_BucketBudget..IncomeFilter+updateBucketName)
+
+<a name="new_module_BucketBudget..IncomeFilter_new"></a>
+
+#### new IncomeFilter(display_name, [bucket_ids], [percentages], rounding_bucket)
+IncomeFilter Constructer.
+Creates empty IncomeFilter if parameters invalid or not given.
+
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| display_name | <code>string</code> |  | The display name of the IncomeFilter. This will be used as the description for transactions added using the filter. |
+| [bucket_ids] | <code>Array.&lt;string&gt;</code> | <code>[]</code> | The ID of each Bucket that the income will go into. bucket_ids[i] should correspond with percentages[i]. |
+| [percentages] | <code>Array.&lt;number&gt;</code> | <code>[]</code> | The percentages of income to go into each bucket rounded to 2 decimal places. percentages[i] should correspond with bucket_ids[i]. |
+| rounding_bucket | <code>string</code> |  | The ID of the bucket that will be affected by any rounding errors, positive or negative. |
+
+<a name="module_BucketBudget..IncomeFilter+display_name"></a>
+
+#### incomeFilter.display\_name : <code>string</code>
+Name of the IncomeFilter.
+This will be used as the description for transactions added using the filter.
+
+**Kind**: instance property of [<code>IncomeFilter</code>](#module_BucketBudget..IncomeFilter)  
+<a name="module_BucketBudget..IncomeFilter+bucket_percentages"></a>
+
+#### incomeFilter.bucket\_percentages : <code>Dictionary.&lt;string, number&gt;</code>
+Filter percentages accessed by Bucket ID.
+
+**Kind**: instance property of [<code>IncomeFilter</code>](#module_BucketBudget..IncomeFilter)  
+<a name="module_BucketBudget..IncomeFilter+bucket_percentages"></a>
+
+#### incomeFilter.bucket\_percentages : <code>string</code>
+The ID of the bucket that will be affected by any rounding errors, positive or negative.
+
+**Kind**: instance property of [<code>IncomeFilter</code>](#module_BucketBudget..IncomeFilter)  
+<a name="module_BucketBudget..IncomeFilter+setBucketPercentages"></a>
+
+#### incomeFilter.setBucketPercentages(bucket_ids, percentages) ⇒ <code>boolean</code>
+Sets percentages to the filter.
+
+**Kind**: instance method of [<code>IncomeFilter</code>](#module_BucketBudget..IncomeFilter)  
+**Returns**: <code>boolean</code> - False if percentages don't add to 100.00 or bucket_ids.length != percentages.length, True otherwise.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| bucket_ids | <code>Array.&lt;string&gt;</code> | The ID of each Bucket that the income will go into. bucket_ids[i] should correspond with percentages[i]. |
+| percentages | <code>Array.&lt;number&gt;</code> | The percentages of income to go into each bucket rounded to 2 decimal places. percentages[i] should correspond with bucket_ids[i]. |
+
+<a name="module_BucketBudget..IncomeFilter+setRoundingBucket"></a>
+
+#### incomeFilter.setRoundingBucket(rounding_bucket) ⇒ <code>boolean</code>
+Sets the rounding bucket
+
+**Kind**: instance method of [<code>IncomeFilter</code>](#module_BucketBudget..IncomeFilter)  
+**Returns**: <code>boolean</code> - False if rounding bucket is not used in filter, true otherwise.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| rounding_bucket | <code>string</code> | The ID of the bucket that will be affected by any rounding errors, positive or negative. |
+
+<a name="module_BucketBudget..IncomeFilter+updateBucketName"></a>
+
+#### incomeFilter.updateBucketName(bucket_id, new_bucket_id)
+Goes through each percentage in the filter and updates the bucket if applicable.
+
+**Kind**: instance method of [<code>IncomeFilter</code>](#module_BucketBudget..IncomeFilter)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| bucket_id | <code>string</code> | The ID of the bucket to rename. |
+| new_bucket_id | <code>string</code> | The new ID for the bucket. |
+
 <a name="module_BucketBudget..Budget"></a>
 
 ### BucketBudget~Budget
@@ -454,6 +584,9 @@ Goes through each transaction in the ledger and updates the bucket if applicable
     * [.addBucket(name, value)](#module_BucketBudget..Budget+addBucket) ⇒ <code>boolean</code>
     * [.removeBucket(bucket_id)](#module_BucketBudget..Budget+removeBucket) ⇒ <code>boolean</code>
     * [.editBucket(bucket_id, new_bucket_name)](#module_BucketBudget..Budget+editBucket) ⇒ <code>boolean</code>
+    * [.addIncomeFilter(filter_name, bucket_ids, percentages, rounding_bucket)](#module_BucketBudget..Budget+addIncomeFilter) ⇒ <code>boolean</code>
+    * [.removeIncomeFilter(filter_id)](#module_BucketBudget..Budget+removeIncomeFilter) ⇒ <code>boolean</code>
+    * [.editIncomeFilter(filter_id, new_filter_name, bucket_ids, percentages, rounding_bucket)](#module_BucketBudget..Budget+editIncomeFilter) ⇒ <code>boolean</code>
     * [.addTransaction(date, bucket, description, value)](#module_BucketBudget..Budget+addTransaction) ⇒ <code>boolean</code>
     * [.removeTransaction(transaction_id)](#module_BucketBudget..Budget+removeTransaction) ⇒ <code>boolean</code>
     * [.editTransaction(date, bucket, description, value, transaction_id)](#module_BucketBudget..Budget+editTransaction) ⇒ <code>boolean</code>
@@ -484,7 +617,7 @@ Adds a new bucket to the dictionary.
 Removes a bucket from the dictionary.
 
 **Kind**: instance method of [<code>Budget</code>](#module_BucketBudget..Budget)  
-**Returns**: <code>boolean</code> - False if bucket ID is a duplicate, true otherwise.  
+**Returns**: <code>boolean</code> - False if bucket ID doesnt exist, true otherwise.  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -502,6 +635,52 @@ Edits an existing bucket in the dictionary and updates transactions in ledger to
 | --- | --- | --- |
 | bucket_id | <code>string</code> | The bucket ID (key) of the bucket to edit. |
 | new_bucket_name | <code>any</code> | New display name for the bucket. |
+
+<a name="module_BucketBudget..Budget+addIncomeFilter"></a>
+
+#### budget.addIncomeFilter(filter_name, bucket_ids, percentages, rounding_bucket) ⇒ <code>boolean</code>
+Attempts to add a new IncomeFilter.
+
+**Kind**: instance method of [<code>Budget</code>](#module_BucketBudget..Budget)  
+**Returns**: <code>boolean</code> - False if percentages don't add to 100.00, bucket_ids.length != percentages.length,
+bucket_ids/rounding bucket are not present within the budget, rounding bucket not in filter,
+or filter_name is duplicate, True otherwise.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| filter_name | <code>string</code> | The name of the IncomeFilter. |
+| bucket_ids | <code>Array.&lt;string&gt;</code> | The ID of each Bucket that the income will go into. bucket_ids[i] should correspond with percentages[i]. |
+| percentages | <code>Array.&lt;number&gt;</code> | The percentages of income to go into each bucket rounded to 2 decimal places. percentages[i] should correspond with bucket_ids[i]. |
+| rounding_bucket | <code>string</code> | The ID of the bucket that will be affected by any rounding errors, positive or negative. |
+
+<a name="module_BucketBudget..Budget+removeIncomeFilter"></a>
+
+#### budget.removeIncomeFilter(filter_id) ⇒ <code>boolean</code>
+Removes an IncomeFilter from the dictionary.
+
+**Kind**: instance method of [<code>Budget</code>](#module_BucketBudget..Budget)  
+**Returns**: <code>boolean</code> - False if filter ID doesn't exist, true otherwise.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| filter_id | <code>string</code> | The filter ID (key) of the filter to remove. |
+
+<a name="module_BucketBudget..Budget+editIncomeFilter"></a>
+
+#### budget.editIncomeFilter(filter_id, new_filter_name, bucket_ids, percentages, rounding_bucket) ⇒ <code>boolean</code>
+Attempts to edit an existing IncomeFilter in the dictionary.
+
+**Kind**: instance method of [<code>Budget</code>](#module_BucketBudget..Budget)  
+**Returns**: <code>boolean</code> - False if percentages don't add to 100.00, bucket_ids.length != percentages.length,
+bucket_ids are not present within the budget, or filter_name is duplicate, True otherwise.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| filter_id | <code>string</code> | The filter ID (key) of the filter to edit. |
+| new_filter_name | <code>string</code> | The name of the IncomeFilter. |
+| bucket_ids | <code>Array.&lt;string&gt;</code> | The ID of each Bucket that the income will go into. bucket_ids[i] should correspond with percentages[i]. |
+| percentages | <code>Array.&lt;number&gt;</code> | The percentages of income to go into each bucket rounded to 2 decimal places. percentages[i] should correspond with bucket_ids[i]. |
+| rounding_bucket | <code>string</code> | The ID of the bucket that will be affected by any rounding errors, positive or negative. |
 
 <a name="module_BucketBudget..Budget+addTransaction"></a>
 
@@ -678,7 +857,7 @@ Returns the row of the table to displaying the original bucket name.
 | Param | Type | Description |
 | --- | --- | --- |
 | bucket_id | <code>string</code> | ID (key) of the bucket being edited. |
-| cancel_button | <code>any</code> | The cancel button that was pressed. |
+| cancel_button | <code>Object</code> | The cancel button that was pressed. |
 
 <a name="BucketBudget.module_confirmBucketEdit_new"></a>
 
@@ -690,6 +869,112 @@ Takes the new name of the bucket and changes it in USER_BUDGET if it isn't a dup
 | Param | Type | Description |
 | --- | --- | --- |
 | bucket_id | <code>string</code> | ID (key) of the bucket to be edited in USER_BUDGET. |
+
+<a name="BucketBudget.module_updateIncomeFilters_new"></a>
+
+## updateIncomeFilters()
+Updates the income filter select option.
+
+<a name="BucketBudget.module_validateIncomeFilterInputs_new"></a>
+
+## validateIncomeFilterInputs()
+Run when add filter or submit changes for income filter button is pressed.
+Validates income filter inputs before adding or editing filter.
+
+
+| Param | Type | Description |
+| --- | --- | --- |
+| add_or_edit | <code>boolean</code> | True if adding filter, false if editing. |
+
+<a name="BucketBudget.module_addIncomeFilter_new"></a>
+
+## addIncomeFilter()
+Runs when add filter button is pressed after inputs are validated.
+Takes the name of the filter, buckets, and percentages and adds an income filter to USER_BUDGET.
+
+
+| Param | Type | Description |
+| --- | --- | --- |
+| filter_name | <code>string</code> | The name of the IncomeFilter. |
+| bucket_ids | <code>Array.&lt;string&gt;</code> | The ID of each Bucket that the income will go into. |
+| percentages | <code>Array.&lt;number&gt;</code> | The percentages of income to go into each bucket rounded to 2 decimal places. |
+| rounding_bucket | <code>string</code> | The ID of the bucket that will be affected by any rounding errors, positive or negative. |
+
+<a name="BucketBudget.module_removeIncomeFilter_new"></a>
+
+## removeIncomeFilter()
+Runs when a remove filter button in the HTML income filter table is pressed.
+Removes the selected income filter from USER_BUDGET.
+
+<a name="BucketBudget.module_editIncomeFilter_new"></a>
+
+## editIncomeFilter()
+Runs when the edit filter button in the HTML income filter table is pressed.
+Enables editing the selected income filter using the income filter table.
+
+
+| Param | Type | Description |
+| --- | --- | --- |
+| edit_button | <code>Object</code> | The edit button that was pressed. |
+
+<a name="BucketBudget.module_confirmIncomeFilterEdit_new"></a>
+
+## confirmIncomeFilterEdit()
+Runs when a submit changes button in the HTML income filter table is pressed after validating input.
+Attempts to make the changes to the income filter in USER_BUDGET if they are valid.
+
+
+| Param | Type | Description |
+| --- | --- | --- |
+| filter_id | <code>string</code> | The filter ID (key) of the filter to edit. |
+| new_filter_name | <code>string</code> | The name of the IncomeFilter. |
+| bucket_ids | <code>Array.&lt;string&gt;</code> | The ID of each Bucket that the income will go into. |
+| percentages | <code>Array.&lt;number&gt;</code> | The percentages of income to go into each bucket rounded to 2 decimal places. |
+| rounding_bucket | <code>string</code> | The ID of the bucket that will be affected by any rounding errors, positive or negative. |
+
+<a name="BucketBudget.module_incomeFilterCheck_new"></a>
+
+## incomeFilterCheck()
+Does input validation and amount calculations for input filters before preview or use.
+
+
+| Param | Type | Description |
+| --- | --- | --- |
+| preview_or_use | <code>boolean</code> | True if previewing filter, false if using filter. |
+
+<a name="BucketBudget.module_previewIncomeFilter_new"></a>
+
+## previewIncomeFilter()
+Uses selected filter and income to preview amount of money going into each bucket.
+
+
+| Param | Type | Description |
+| --- | --- | --- |
+| bucket_ids | <code>Array.&lt;string&gt;</code> | Array of bucket IDs to use with the filter. |
+| amounts | <code>Array.&lt;Number&gt;</code> | Monetary amounts for each bucket. |
+
+<a name="BucketBudget.module_useIncomeFilter_new"></a>
+
+## useIncomeFilter()
+Uses selected filter and income to add money into the filter's buckets.
+
+
+| Param | Type | Description |
+| --- | --- | --- |
+| bucket_ids | <code>Array.&lt;string&gt;</code> | Array of bucket IDs to use with the filter. |
+| amounts | <code>Array.&lt;Number&gt;</code> | Monetary amounts for each bucket. |
+| transaction_date | <code>string</code> | Date the filter transactions occurred in YYYY-MM-DD format. |
+| filter_id | <code>string</code> | ID (key) of the filter being used from USER_BUDGET. |
+
+<a name="BucketBudget.module_addBucketToFilter_new"></a>
+
+## addBucketToFilter()
+Adds new bucket input row to income filter.
+
+
+| Param | Type | Description |
+| --- | --- | --- |
+| new_bucket_button | <code>Object</code> | The button that was pressed |
 
 <a name="BucketBudget.module_updateLedgerTable_new"></a>
 

@@ -579,6 +579,14 @@ class IncomeFilter {
       this.bucket_percentages[bucket_ids[i]] = percentages[i];
     }
 
+    // If bucket is being edited, make sure old bucket ids are removed.
+    var bucket_keys = Object.keys(this.bucket_percentages);
+    for (var i = 0; i < bucket_keys.length; i++) {
+      if (!bucket_ids.includes(bucket_keys[i])) {
+        delete this.bucket_percentages[bucket_keys[i]];
+      }
+    }
+
     return true;
   }
 
@@ -762,7 +770,7 @@ class Budget {
 
   /**
    * Attempts to edit an existing IncomeFilter in the dictionary.
-   * @param {string} filter_id - The filter ID (key) of the filter to remove.
+   * @param {string} filter_id - The filter ID (key) of the filter to edit.
    * @param {string} new_filter_name - The name of the IncomeFilter.
    * @param {string[]} bucket_ids - The ID of each Bucket that the income will go into.
    * bucket_ids[i] should correspond with percentages[i].
@@ -775,7 +783,8 @@ class Budget {
   editIncomeFilter(filter_id, new_filter_name, bucket_ids, percentages, rounding_bucket) {
     // Check that filter ID is not duplicate.
     var new_filter_id = new_filter_name.toLowerCase().replaceAll(" ", "_");
-    if (this.income_filters[new_filter_id] != null) {
+    var changed_name = new_filter_id != filter_id;
+    if (changed_name && this.income_filters[new_filter_id] != null) {
       return false;
     }
 
@@ -799,9 +808,11 @@ class Budget {
     }
 
     // Update key and display name (using defineProperty preserves order of filters).
-    Object.defineProperty(this.income_filters, new_filter_id, Object.getOwnPropertyDescriptor(this.income_filters, filter_id));
-    this.income_filters[new_filter_id].display_name = new_filter_name;
-    delete this.income_filters[filter_id];
+    if (changed_name) {
+      Object.defineProperty(this.income_filters, new_filter_id, Object.getOwnPropertyDescriptor(this.income_filters, filter_id));
+      this.income_filters[new_filter_id].display_name = new_filter_name;
+      delete this.income_filters[filter_id];
+    }
 
     return true;
   }
@@ -1406,6 +1417,7 @@ function updateIncomeFilters() {
 
   // Empty filter name input.
   var filter_name_box = document.getElementById("new-filter-name");
+  filter_name_box.setAttribute("old_value", "");
   filter_name_box.value = "";
 
   // Reset add, edit, and reset buttons
@@ -1415,7 +1427,7 @@ function updateIncomeFilters() {
   var add_button = document.getElementById("filter-submit-edit");
   if (add_button != null) {
     add_button.setAttribute("id", "new-filter-submit");
-    add_button.setAttribute("onclick", "addIncomeFilter()");
+    add_button.setAttribute("onclick", "validateIncomeFilterInputs(true)");
     add_button.innerHTML = "Add Filter";
   }
 
@@ -1489,11 +1501,12 @@ function updateIncomeFilters() {
 }
 
 /**
- * Runs when add filter button is pressed.
- * Takes the name of the filter, buckets, and percentages and adds an income filter.
- * @module module:BucketBudget.addIncomeFilter()
+ * Run when add filter or submit changes for income filter button is pressed.
+ * Validates income filter inputs before adding or editing filter.
+ * @param {boolean} add_or_edit - True if adding filter, false if editing.
+ * @module module:BucketBudget.validateIncomeFilterInputs()
  */
-function addIncomeFilter() {
+function validateIncomeFilterInputs(add_or_edit) {
   // Get filter name.
   var new_filter_name = document.getElementById("new-filter-name").value;
   if (new_filter_name == "") {
@@ -1516,6 +1529,25 @@ function addIncomeFilter() {
       rounding_bucket = filter_buckets[i].value;
     }
   }
+
+  if (add_or_edit) {
+    addIncomeFilter(new_filter_name, bucket_ids, percentages, rounding_bucket);
+  } else {
+    var old_filter_id = document.getElementById("new-filter-name").getAttribute("old_value");
+    confirmIncomeFilterEdit(old_filter_id, new_filter_name, bucket_ids, percentages, rounding_bucket);
+  }
+}
+
+/**
+ * Runs when add filter button is pressed after inputs are validated.
+ * Takes the name of the filter, buckets, and percentages and adds an income filter to USER_BUDGET.
+ * @param {string} filter_name - The name of the IncomeFilter.
+ * @param {string[]} bucket_ids - The ID of each Bucket that the income will go into.
+ * @param {number[]} percentages - The percentages of income to go into each bucket rounded to 2 decimal places.
+ * @param {string} rounding_bucket - The ID of the bucket that will be affected by any rounding errors, positive or negative.
+ * @module module:BucketBudget.addIncomeFilter()
+ */
+function addIncomeFilter(new_filter_name, bucket_ids, percentages, rounding_bucket) {
 
   var success = USER_BUDGET.addIncomeFilter(new_filter_name, bucket_ids,
     percentages, rounding_bucket);
@@ -1548,7 +1580,7 @@ function removeIncomeFilter() {
 }
 
 /**
- * Runs when a edit filter button in the HTML income filter table is pressed.
+ * Runs when the edit filter button in the HTML income filter table is pressed.
  * Enables editing the selected income filter using the income filter table.
  * @param {Object} edit_button - The edit button that was pressed.
  * @module module:BucketBudget.editIncomeFilter()
@@ -1569,7 +1601,7 @@ function editIncomeFilter(edit_button) {
   var submit_button = document.getElementById("new-filter-submit");
   submit_button.innerHTML = "Submit Changes";
   submit_button.setAttribute("id", "filter-submit-edit");
-  submit_button.setAttribute("onclick", "confirmIncomeFilterEdit(this)");
+  submit_button.setAttribute("onclick", "validateIncomeFilterInputs(false)");
 
   // Change Reset Table button text to Cancel Edit
   var cancel_button = document.getElementById("reset-filter-table");
@@ -1577,6 +1609,7 @@ function editIncomeFilter(edit_button) {
 
   // Set Filter Name.
   var filter_name_box = document.getElementById("new-filter-name");
+  filter_name_box.setAttribute("old_value", filter_id);
   filter_name_box.value = filter.display_name;
 
   // Set first input row
@@ -1640,12 +1673,16 @@ function editIncomeFilter(edit_button) {
 }
 
 /**
- * Runs when a submit changes button in the HTML income filter table is pressed.
- * Attempts to make the changes to the income filter if they are valid.
- * @param {Object} confirm_button - The confirm button pressed.
+ * Runs when a submit changes button in the HTML income filter table is pressed after validating input.
+ * Attempts to make the changes to the income filter in USER_BUDGET if they are valid.
+ * @param {string} filter_id - The filter ID (key) of the filter to edit.
+ * @param {string} new_filter_name - The name of the IncomeFilter.
+ * @param {string[]} bucket_ids - The ID of each Bucket that the income will go into.
+ * @param {number[]} percentages - The percentages of income to go into each bucket rounded to 2 decimal places.
+ * @param {string} rounding_bucket - The ID of the bucket that will be affected by any rounding errors, positive or negative.
  * @module module:BucketBudget.confirmIncomeFilterEdit()
  */
-function confirmIncomeFilterEdit(confirm_button) {
+function confirmIncomeFilterEdit(filter_id, new_filter_name, bucket_ids, percentages, rounding_bucket) {
   var success = USER_BUDGET.editIncomeFilter(filter_id, new_filter_name, bucket_ids, percentages, rounding_bucket);
 
   // If filter name already exists or percentages dont add to 100.00, alert user.
@@ -1663,7 +1700,7 @@ function confirmIncomeFilterEdit(confirm_button) {
  * @param {boolean} preview_or_use - True if previewing filter, false if using filter.
  * @module module:BucketBudget.incomeFilterCheck()
  */
-function incomeFilterCheck(preview_or_use) {
+function incomeFilterPreviewCheck(preview_or_use) {
   // Validate input.
   var filter_id = document.getElementById("filter-preview-input").value;
   if (filter_id == "") {
@@ -1825,8 +1862,6 @@ function removeBucketFromFilter(remove_button) {
   // Remove the row from the table
   var remove_row = remove_button.parentElement.parentElement;
   remove_row.remove();
-
-  delete remove_row;
 }
 
 /**
