@@ -272,11 +272,19 @@ class Ledger {
 
     this.transactions[after_id].bucket_before = new_bucket_before;
 
-    // Update the rest of the transactions in this bucket.
-    var new_bucket_val = this.updateLedger(after_id);
-
-    // Delete transaction from the ledger.
+    // Update the rest of the transactions and delete this from the ledger.
+    var new_bucket_val;
     delete this.transactions[ledger_id];
+    if (ledger_id != after_id) {
+      // This transaction isnt the last.
+      new_bucket_val = this.updateLedger(after_id);
+    } else if (ledger_id != before_id) {
+      // This transaction isnt the first.
+      new_bucket_val = this.updateLedger(before_id);
+    } else {
+      // This transaction is the only one in the bucket.
+      new_bucket_val = 0;
+    }
 
     return new_bucket_val;
   }
@@ -298,31 +306,26 @@ class Ledger {
     var latest_ledger_id = Object.keys(this.transactions)[0];
     var latest_transaction = this.transactions[latest_ledger_id];
 
-    if (Transaction.dateCompare(new_transaction, latest_transaction, true) < 0) {
-
-      if (old_transaction.bucket != new_transaction.bucket) {
-        // Update old bucket's transactions.
-        new_bucket_vals[0][1] = this.removeTransaction(ledger_id);
-      }
-
-      // Put edited transaction where it belongs.
-      this.transactions[ledger_id] = new_transaction;
-      this.sortLedger("date", false);
-
-      var adjacent_ledger_ids = this.getAdjacentTransactions(ledger_id);
-      var before_id = adjacent_ledger_ids[0];
-
-      var new_bucket_before = 0;
-      if (before_id != ledger_id) {
-        new_bucket_before = this.transactions[before_id];
-      }
-      this.transactions[ledger_id].bucket_before = new_bucket_before;
-
-      // update the rest of the transactions in this bucket
-      new_bucket_vals[1][1] = this.updateLedger(before_id);
-    } else {
-      this.transactions[ledger_id] = new_transaction;
+    if (old_transaction.bucket != new_transaction.bucket) {
+      // Update old bucket's transactions.
+      new_bucket_vals[0][1] = this.removeTransaction(ledger_id);
     }
+
+    // Put edited transaction where it belongs.
+    this.transactions[ledger_id] = new_transaction;
+    this.sortLedger("date", false);
+
+    var adjacent_ledger_ids = this.getAdjacentTransactions(ledger_id);
+    var before_id = adjacent_ledger_ids[0];
+
+    var new_bucket_before = 0;
+    if (before_id != ledger_id) {
+      new_bucket_before = this.transactions[before_id];
+    }
+    this.transactions[ledger_id].bucket_before = new_bucket_before;
+
+    // update the rest of the transactions in this bucket
+    new_bucket_vals[1][1] = this.updateLedger(before_id);
 
     // Sort ledger by its sort parameters.
     this.sortLedger();
