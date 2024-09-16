@@ -1453,7 +1453,7 @@ function updateIncomeFilters() {
 
   bucket.innerHTML = "Bucket";
   percentage.innerHTML = "Percentage";
-  rounding_radio.innerHTML = "Rounding Bucket?";
+  rounding_radio.innerHTML = "Round?";
 
   header_row.appendChild(bucket);
   header_row.appendChild(percentage);

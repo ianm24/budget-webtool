@@ -13,7 +13,7 @@
 <body>
   <h1>Bucket Budget with Ledger</h1>
 
-  <div id="data-operations">
+  <div id="first-row data-operations">
     <h3>Import Data</h3>
     JSON Data File: <input type="file" id="data-upload" name="data-upload">
     <button id="data-submit" onclick="importData()">Import File</button>
@@ -22,84 +22,79 @@
     <button id="data-export-js" onclick="exportData('json')">Export to JSON</button>
   </div>
   <!--
-  income filters
-    create new filters
-      bucket selector and percentage input and radio button for penny rounding
-      all percentages must add up to 100
-      select a which bucket will be affected if percentage rounding results in difference of a penny
-    select from existing filters (dropdown)
-    put income in a box
-      click preview to see how percentages turn to exact numbers
-      click filter income to take the income and allocate to those buckets as separate ledger transactions
-
+  paginate ledger
   stretch goal: monthly and yearly insights
   -->
-  <h2>Buckets</h2>
-  <div id="bucket-section">
-    <div id="new-bucket">
-      <p>Add New Bucket Name:</p>
-      <input id="new-bucket-name" type="text" placeholder="Bucket Name">
-      <button id="new-bucket-submit" onclick="addBucket()">Add Bucket</button>
+  <div id="second-row">
+    <div id="bucket-section">
+      <h2>Buckets</h2>
+      <div id="new-bucket">
+        <p>Add New Bucket Name:</p>
+        <input id="new-bucket-name" type="text" placeholder="Bucket Name">
+        <button id="new-bucket-submit" onclick="addBucket()">Add Bucket</button>
+      </div>
+      <br>
+      <table id="bucket-table">
+        <tr>
+          <th>Bucket</th>
+          <th>Value</th>
+          <th></th>
+          <th></th>
+        </tr>
+      </table>
     </div>
-    <br>
-    <table id="bucket-table">
-      <tr>
-        <th>Bucket</th>
-        <th>Value</th>
-      </tr>
-    </table>
+
+    <div id="income-filter-section">
+      <h2>Income Filter</h2>
+      <div id="filter-preview">
+        <p>Preview Income Filter:</p>
+        <select id="filter-preview-input">
+          <option value="" disabled selected>Select a filter</option>
+        </select>
+        <input id="income-preview-input" type="number" step="0.01" placeholder="Income">
+        <input id="date-filter-use-input" type="date" autocomplete="date">
+        <br />
+        <button id="filter-preview-submit" onclick="incomeFilterPreviewCheck(true)">Preview Filter</button>
+        <button id="filter-use-submit" onclick="incomeFilterPreviewCheck(false)">Use Filter</button>
+        <button id="filter-edit-submit" onclick="editIncomeFilter(this)">Edit Filter</button>
+        <button id="filter-remove-submit" onclick="removeIncomeFilter()">Remove Filter</button>
+      </div>
+      <div id="new-filter">
+        <p>Add New Income Filter:</p>
+        <input id="new-filter-name" type="text" placeholder="Filter Name">
+        <button id="new-filter-submit" onclick="validateIncomeFilterInputs(true)">Add Filter</button>
+        <button id="reset-filter-table" onclick="updateIncomeFilters()">Reset Table</button>
+      </div>
+      <br>
+      <table id="income-filter-table">
+        <tr>
+          <th>Bucket</th>
+          <th>Percentage</th>
+          <th>Round?</th>
+          <th></th>
+        </tr>
+        <tr>
+          <td>
+            <select class="bucket-input bucket-filter-input">
+              <option value="" disabled selected>Select a bucket</option>
+            </select>
+          </td>
+          <td>
+            <input class="percent-filter-input" type="number" step="0.05" placeholder="% of income">
+          </td>
+          <td>
+            <input class="rounding-filter-input" type="radio" name="filter-rounding-select" checked="true">
+          </td>
+          <td>
+            <button id="new-bucket-filter" onclick="addBucketToFilter(this)">Add New Bucket to Filter</button>
+          </td>
+        </tr>
+      </table>
+    </div>
   </div>
 
-  <!-- add date input to apply to filter when using it -->
-  <h2>Income Filter</h2>
-  <div id="income-filter-section">
-    <div id="filter-preview">
-      <p>Preview Income Filter:</p>
-      <select id="filter-preview-input">
-        <option value="" disabled selected>Select a filter</option>
-      </select>
-      <input id="income-preview-input" type="number" step="0.01" placeholder="Income">
-      <input id="date-filter-use-input" type="date" autocomplete="date">
-      <button id="filter-preview-submit" onclick="incomeFilterPreviewCheck(true)">Preview Filter</button>
-      <button id="filter-use-submit" onclick="incomeFilterPreviewCheck(false)">Use Filter</button>
-      <button id="filter-edit-submit" onclick="editIncomeFilter(this)">Edit Filter</button>
-      <button id="filter-remove-submit" onclick="removeIncomeFilter()">Remove Filter</button>
-    </div>
-    <div id="new-filter">
-      <p>Add New Income Filter:</p>
-      <input id="new-filter-name" type="text" placeholder="Filter Name">
-      <button id="new-filter-submit" onclick="validateIncomeFilterInputs(true)">Add Filter</button>
-      <button id="reset-filter-table" onclick="updateIncomeFilters()">Reset Table</button>
-    </div>
-    <br>
-    <table id="income-filter-table">
-      <tr>
-        <th>Bucket</th>
-        <th>Percentage</th>
-        <th>Rounding Bucket?</th>
-        <th></th>
-      </tr>
-      <tr>
-        <td>
-          <select class="bucket-input bucket-filter-input">
-            <option value="" disabled selected>Select a bucket</option>
-          </select>
-        </td>
-        <td>
-          <input class="percent-filter-input" type="number" step="0.05" placeholder="% of income">
-        </td>
-        <td>
-          <input class="rounding-filter-input" type="radio" name="filter-rounding-select" checked="true">
-        </td>
-        <td>
-          <button id="new-bucket-filter" onclick="addBucketToFilter(this)">Add New Bucket to Filter</button>
-        </td>
-      </tr>
-    </table>
-  </div>
-
-  <h2>Ledger</h2>
-  <div id="ledger-section">
+  <div id="third-row ledger-section">
+    <h2>Ledger</h2>
     <div id="new-transaction">
       <p>Add New Transaction:</p>
       <input id="date-input" type="date" autocomplete="date">
