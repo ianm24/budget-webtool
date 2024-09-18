@@ -160,7 +160,7 @@ class Transaction {
    */
   static bucketCompare(a, b, asc) {
     // TODO make sorting by this keep a consistent date sort within bucket
-    var date_sort_val = Transaction.dateCompare(a, b, false);
+    // var date_sort_val = Transaction.dateCompare(a, b, false);
     if (a["bucket"] > b["bucket"]) {
       var bucket_sort_val = -1 * Math.pow(-1, 1 + asc);
       return bucket_sort_val;
@@ -301,10 +301,8 @@ class Ledger {
     var new_bucket_vals = [[old_transaction.bucket, old_transaction.bucket_after],
     [new_transaction.bucket, new_transaction.bucket_after]];
 
-    // If this transaction's date is before the latest transaction, update future transactions.
+    // Update future transactions.
     this.sortLedger("date", false);
-    var latest_ledger_id = Object.keys(this.transactions)[0];
-    var latest_transaction = this.transactions[latest_ledger_id];
 
     if (old_transaction.bucket != new_transaction.bucket) {
       // Update old bucket's transactions.
@@ -947,6 +945,235 @@ class Budget {
 //===Start File Import/Export Functions===
 
 /**
+ * Validates imported JSON buckets and adds them to the imported_budget.
+ * @param {Budget} imported_budget - The constructed budget to add buckets to.
+ * @param {Object} JSON_object - The imported JSON Object.
+ * @param {boolean} invalid_JSON - Value to keep track of any JSON malformities.
+ * @module module:BucketBudget.importValidationJSONBuckets()
+ */
+function importValidationJSONBuckets(imported_budget, JSON_object, invalid_JSON) {
+  var bucket_keys = Object.keys(JSON_object.buckets);
+  for (var i = 0; i < bucket_keys.length; i++) {
+    var curr_filter = JSON_object.buckets[bucket_keys[i]];
+    var name = "";
+    var val = 0;
+
+    // Bucket input validation.
+    if (curr_filter.display_name == null || typeof (curr_filter.display_name) != "string") {
+      invalid_JSON = true;
+      name = "INVALID_JSON_BUCKET_" + i;
+    } else {
+      name = curr_filter.display_name;
+    }
+
+    if (curr_filter.value == null || typeof (curr_filter.value) != "number") {
+      invalid_JSON = true;
+      val = 0
+    } else {
+      val = curr_filter.value;
+    }
+
+    var success = imported_budget.addBucket(name, val);
+    if (!success) {
+      invalid_JSON = true;
+      imported_budget.addBucket("INVALID_JSON_BUCKET_" + i, val);
+    }
+  }
+}
+
+/**
+ * Validates imported JSON income filter bucket percentages.
+ * @param {Budget} imported_budget - The constructed budget so far.
+ * @param {Object} curr_filter - JSON object containing unvalidated filter.
+ * @param {boolean} invalid_JSON - Value to keep track of any JSON malformities.
+ * @return {[string[],Number[]]} - The bucket_ids and percentages for the filter.
+ * @module module:BucketBudget.importValidationJSONIncomeFiltersBucketPercentages()
+ */
+function importValidationJSONIncomeFiltersBucketPercentages(imported_budget, curr_filter, invalid_JSON) {
+  var filter_bucket_id_keys = Object.keys(curr_filter.bucket_percentages);
+  var bucket_ids = [];
+  var percentages = [];
+  var percentage_sum = 0;
+  for (var j = 0; j < filter_bucket_id_keys.length; j++) {
+    var curr_bucket_id = filter_bucket_id_keys[j];
+    var curr_percentage = curr_filter.bucket_percentages[curr_bucket_id];
+
+    // Verify bucket ID is valid
+    if (typeof (curr_bucket_id) != "string" || imported_budget.buckets[curr_bucket_id] == null) {
+      invalid_JSON = true;
+      curr_bucket_id = "INVALID_JSON_INCOME_FILTER_BUCKET" + j;
+    }
+
+    // Verify percentage is valid
+    if (typeof (curr_percentage) != "number" || curr_percentage != Number(curr_percentage.toFixed(2))) {
+      invalid_JSON = true;
+      curr_percentage = 0.00;
+    }
+
+    bucket_ids.push(curr_bucket_id);
+    percentages.push(curr_percentage);
+    percentage_sum = Number((percentage_sum + curr_percentage).toFixed(2));
+  }
+
+  // Verify percentage sum is valid
+  if (percentage_sum != 100.00) {
+    bucket_ids.push("INVALID_JSON_INCOME_FILTER_SUM");
+    percentages.push(Number((100.00 - percentage_sum).toFixed(2)));
+  }
+
+  return [bucket_ids, percentages];
+}
+
+/**
+ * Validates imported JSON income filters and adds them to the imported_budget.
+ * @param {Budget} imported_budget - The constructed budget to add filters to.
+ * @param {Object} JSON_object - The imported JSON Object.
+ * @param {boolean} invalid_JSON - Value to keep track of any JSON malformities.
+ * @module module:BucketBudget.importValidationJSONIncomeFilters()
+ */
+function importValidationJSONIncomeFilters(imported_budget, JSON_object, invalid_JSON) {
+  var filter_keys = Object.keys(JSON_object.income_filters);
+  for (var i = 0; i < filter_keys.length; i++) {
+    var curr_filter = JSON_object.income_filters[filter_keys[i]];
+    var name = "";
+    var bucket_percentages = {};
+    var rounding_bucket = "";
+
+    // IncomeFilter display name input validation.
+    if (curr_filter.display_name == null || typeof (curr_filter.display_name) != "string") {
+      invalid_JSON = true;
+      name = "INVALID_JSON_INCOME_FILTER_" + i;
+    } else {
+      name = curr_filter.display_name;
+    }
+
+    // IncomeFilter bucket percentages input validation.
+    if (curr_filter.bucket_percentages == null) {
+      invalid_JSON = true;
+      bucket_percentages["INVALID_JSON_INCOME_FILTER_BUCKET_PERCENTAGE"] = 100.00;
+    } else {
+      // Verify bucket percentages are valid.
+      var b_and_p = importValidationJSONIncomeFiltersBucketPercentages(imported_budget, curr_filter, invalid_JSON);
+      var bucket_ids = b_and_p[0];
+      var percentages = b_and_p[1];
+    }
+
+    // IncomeFilter rounding bucket input validation.
+    if (curr_filter.rounding_bucket == null ||
+      typeof (curr_filter.rounding_bucket) != "string" ||
+      !bucket_ids.includes(curr_filter.rounding_bucket)) {
+      invalid_JSON = true;
+      rounding_bucket = "INVALID_JSON_INCOME_FILTER_ROUNDING_BUCKET" + i;
+    } else {
+      rounding_bucket = curr_filter.rounding_bucket;
+    }
+
+    imported_budget.addIncomeFilter(name, bucket_ids, percentages, rounding_bucket);
+  }
+}
+
+/**
+ * Validates imported JSON ledger and adds it to the imported_budget.
+ * @param {Budget} imported_budget - The constructed budget to add ledger to.
+ * @param {Object} JSON_object - The imported JSON Object.
+ * @param {boolean} invalid_JSON - Value to keep track of any JSON malformities.
+ * @module module:BucketBudget.importValidationJSONLedger()
+ */
+function importValidationJSONLedger(imported_budget, JSON_object, invalid_JSON) {
+  // Sort input validation.
+  if (JSON_object.ledger.sort_field == null || typeof (JSON_object.ledger.sort_field) != "string" ||
+    !valid_sort_fields.includes(JSON_object.ledger.sort_field)) {
+
+    invalid_JSON = true;
+    imported_budget.ledger.sort_field = valid_sort_fields[0];
+  } else {
+    imported_budget.ledger.sort_field = JSON_object.ledger.sort_field;
+  }
+
+  if (JSON_object.ledger.sort_dir_asc == null || typeof (JSON_object.ledger.sort_dir_asc) != "boolean") {
+    invalid_JSON = true;
+    imported_budget.ledger.sort_dir_asc = false;
+  } else {
+    imported_budget.ledger.sort_dir_asc = JSON_object.ledger.sort_dir_asc;
+  }
+
+  // Check that each transaction has the required fields (even if empty).
+  var invalid_id_counter = 0;
+  var max_id = 0;
+  var imported_transactions = {};
+  var import_ledger_keys = Object.keys(JSON_object.ledger.transactions);
+  for (var i = 0; i < import_ledger_keys.length; i++) {
+    var curr_transaction = JSON_object.ledger.transactions[import_ledger_keys[i]];
+    var curr_id = invalid_id_counter;
+    var curr_date = "0001-01-01";
+    var curr_filter = "INVALID_JSON_TRANSACTION_BUCKET";
+    var curr_bucket_before = 0;
+    var curr_val = 0;
+    var curr_desc = "INVALID_JSON_DESCRIPTION";
+
+    if (curr_transaction.id == null || typeof (curr_transaction.id) != "number") {
+      invalid_JSON = true;
+      invalid_id_counter++;
+    } else {
+      curr_id = curr_transaction.id;
+      max_id = Math.max(max_id, curr_id);
+    }
+
+    // Check date.
+    if (curr_transaction.date == null || typeof (curr_transaction.date) != "string"
+      || curr_transaction.date.match("[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]") == null) {
+      invalid_JSON = true;
+    } else {
+      curr_date = curr_transaction.date;
+    }
+
+    // Check bucket.
+    if (curr_transaction.bucket == null || typeof (curr_transaction.bucket) != "string") {
+      invalid_JSON = true;
+    } else if (Object.keys(imported_budget.buckets).indexOf(curr_transaction.bucket) == -1) {
+      invalid_JSON = true;
+      curr_filter = curr_transaction.bucket;
+    } else {
+      curr_filter = curr_transaction.bucket;
+    }
+
+    // Check bucket before.
+    if (curr_transaction.bucket_before == null || typeof (curr_transaction.bucket_before) != "number") {
+      invalid_JSON = true;
+    } else {
+      curr_bucket_before = curr_transaction.bucket_before;
+    }
+
+    // Check value.
+    if (curr_transaction.value == null || typeof (curr_transaction.value) != "number") {
+      invalid_JSON = true;
+    } else {
+      curr_val = curr_transaction.value;
+    }
+
+    // Check description.
+    if (curr_transaction.description == null || typeof (curr_transaction.description) != "string") {
+      invalid_JSON = true;
+    } else {
+      curr_desc = curr_transaction.description;
+    }
+
+    imported_transactions[import_ledger_keys[i]] = new Transaction(curr_id, curr_date, curr_filter,
+      curr_desc, curr_val, curr_bucket_before)
+  }
+  imported_budget.ledger.transactions = imported_transactions;
+
+  // Check id_counter.
+  if (JSON_object.ledger.id_counter == null || typeof (JSON_object.ledger.id_counter) != "number" ||
+    JSON_object.ledger.id_counter < max_id + invalid_id_counter) {
+    invalid_JSON = true;
+    imported_budget.ledger.id_counter = max_id + invalid_id_counter;
+  } else {
+    imported_budget.ledger.id_counter = JSON_object.ledger.id_counter;
+  }
+}
+
+/**
  * Imports a budget from a JSON object.
  * @param {Object} object - JSON object gotten from the reader. Ideally a Budget.
  * @returns {bool} False if the JSON object is not formatted as a correct Budget, true otherwise.
@@ -965,201 +1192,21 @@ function importJSON(object) {
   if (!object.buckets) {
     invalid_JSON = true;
   } else {
-    var bucket_keys = Object.keys(object.buckets);
-    for (var i = 0; i < bucket_keys.length; i++) {
-      var curr_filter = object.buckets[bucket_keys[i]];
-      var name = "";
-      var val = 0;
-
-      // Bucket input validation.
-      if (curr_filter.display_name == null || typeof (curr_filter.display_name) != "string") {
-        invalid_JSON = true;
-        name = "INVALID_JSON_BUCKET_" + i;
-      } else {
-        name = curr_filter.display_name;
-      }
-
-      if (curr_filter.value == null || typeof (curr_filter.value) != "number") {
-        invalid_JSON = true;
-        val = 0
-      } else {
-        val = curr_filter.value;
-      }
-      var success = imported_budget.addBucket(name, val);
-      if (!success) {
-        invalid_JSON = true;
-        imported_budget.addBucket("INVALID_JSON_BUCKET_" + i, val);
-      }
-    }
+    importValidationJSONBuckets(imported_budget, object, invalid_JSON);
   }
 
   // Add all the IncomeFilters.
   if (!object.income_filters) {
     invalid_JSON = true;
   } else {
-    var filter_keys = Object.keys(object.income_filters);
-    for (var i = 0; i < filter_keys.length; i++) {
-      var curr_filter = object.income_filters[filter_keys[i]];
-      var name = "";
-      var bucket_percentages = {};
-      var rounding_bucket = "";
-
-      // IncomeFilter display name input validation.
-      if (curr_filter.display_name == null || typeof (curr_filter.display_name) != "string") {
-        invalid_JSON = true;
-        name = "INVALID_JSON_INCOME_FILTER_" + i;
-      } else {
-        name = curr_filter.display_name;
-      }
-
-      // IncomeFilter bucket percentages input validation.
-      if (curr_filter.bucket_percentages == null) {
-        invalid_JSON = true;
-        bucket_percentages["INVALID_JSON_INCOME_FILTER_BUCKET_PERCENTAGE"] = 100.00;
-      } else {
-        // Verify bucket percentages are valid.
-        var filter_bucket_id_keys = Object.keys(curr_filter.bucket_percentages);
-        var bucket_ids = [];
-        var percentages = [];
-        var percentage_sum = 0;
-        for (var j = 0; j < filter_bucket_id_keys.length; j++) {
-          var curr_bucket_id = filter_bucket_id_keys[j];
-          var curr_percentage = curr_filter.bucket_percentages[curr_bucket_id];
-
-          // Verify bucket ID is valid
-          if (typeof (curr_bucket_id) != "string" || imported_budget.buckets[curr_bucket_id] == null) {
-            invalid_JSON = true;
-            curr_bucket_id = "INVALID_JSON_INCOME_FILTER_BUCKET" + j;
-          }
-
-          // Verify percentage is valid
-          if (typeof (curr_percentage) != "number" || curr_percentage != Number(curr_percentage.toFixed(2))) {
-            invalid_JSON = true;
-            curr_percentage = 0.00;
-          }
-
-          bucket_ids.push(curr_bucket_id);
-          percentages.push(curr_percentage);
-          percentage_sum = Number((percentage_sum + curr_percentage).toFixed(2));
-        }
-
-        // Verify percentage sum is valid
-        if (percentage_sum != 100.00) {
-          bucket_ids.push("INVALID_JSON_INCOME_FILTER_SUM");
-          percentages.push(Number((100.00 - percentage_sum).toFixed(2)));
-        }
-      }
-
-      // IncomeFilter rounding bucket input validation.
-      if (curr_filter.rounding_bucket == null ||
-        typeof (curr_filter.rounding_bucket) != "string" ||
-        !bucket_ids.includes(curr_filter.rounding_bucket)) {
-        invalid_JSON = true;
-        rounding_bucket = "INVALID_JSON_INCOME_FILTER_ROUNDING_BUCKET" + i;
-      } else {
-        rounding_bucket = curr_filter.rounding_bucket;
-      }
-
-      imported_budget.addIncomeFilter(name, bucket_ids, percentages, rounding_bucket);
-    }
+    importValidationJSONIncomeFilters(imported_budget, object, invalid_JSON);
   }
 
   // Ledger input validation.
   if (!object.ledger || !object.ledger.transactions) {
     invalid_JSON = true;
   } else {
-    // Sort input validation.
-    if (object.ledger.sort_field == null || typeof (object.ledger.sort_field) != "string" ||
-      !valid_sort_fields.includes(object.ledger.sort_field)) {
-
-      invalid_JSON = true;
-      imported_budget.ledger.sort_field = valid_sort_fields[0];
-    } else {
-      imported_budget.ledger.sort_field = object.ledger.sort_field;
-    }
-
-    if (object.ledger.sort_dir_asc == null || typeof (object.ledger.sort_dir_asc) != "boolean") {
-      invalid_JSON = true;
-      imported_budget.ledger.sort_dir_asc = false;
-    } else {
-      imported_budget.ledger.sort_dir_asc = object.ledger.sort_dir_asc;
-    }
-
-    // Check that each transaction has the required fields (even if empty).
-    var invalid_id_counter = 0;
-    var max_id = 0;
-    var imported_transactions = {};
-    var import_ledger_keys = Object.keys(object.ledger.transactions);
-    for (var i = 0; i < import_ledger_keys.length; i++) {
-      var curr_transaction = object.ledger.transactions[import_ledger_keys[i]];
-      var curr_id = invalid_id_counter;
-      var curr_date = "0001-01-01";
-      var curr_filter = "INVALID_JSON_TRANSACTION_BUCKET";
-      var curr_bucket_before = 0;
-      var curr_val = 0;
-      var curr_desc = "INVALID_JSON_DESCRIPTION";
-
-      if (curr_transaction.id == null || typeof (curr_transaction.id) != "number") {
-        invalid_JSON = true;
-        invalid_id_counter++;
-      } else {
-        curr_id = curr_transaction.id;
-        max_id = Math.max(max_id, curr_id);
-      }
-
-      // Check date.
-      if (curr_transaction.date == null || typeof (curr_transaction.date) != "string"
-        || curr_transaction.date.match("[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]") == null) {
-        invalid_JSON = true;
-      } else {
-        curr_date = curr_transaction.date;
-      }
-
-      // Check bucket.
-      if (curr_transaction.bucket == null || typeof (curr_transaction.bucket) != "string") {
-        invalid_JSON = true;
-      } else if (Object.keys(imported_budget.buckets).indexOf(curr_transaction.bucket)) {
-        invalid_JSON = true;
-        curr_filter = curr_transaction.bucket;
-      } else {
-        curr_filter = curr_transaction.bucket;
-      }
-
-      // Check bucket before.
-      if (curr_transaction.bucket_before == null || typeof (curr_transaction.bucket_before) != "number") {
-        invalid_JSON = true;
-      } else {
-        curr_bucket_before = curr_transaction.bucket_before;
-      }
-
-      // Check value.
-      if (curr_transaction.value == null || typeof (curr_transaction.value) != "number") {
-        invalid_JSON = true;
-      } else {
-        curr_val = curr_transaction.value;
-      }
-
-      // Check description.
-      if (curr_transaction.description == null || typeof (curr_transaction.description) != "string") {
-        invalid_JSON = true;
-      } else {
-        curr_desc = curr_transaction.description;
-      }
-
-      imported_transactions[import_ledger_keys[i]] = new Transaction(curr_id, curr_date, curr_filter,
-        curr_desc, curr_val, curr_bucket_before)
-    }
-    imported_budget.ledger.transactions = imported_transactions;
-
-    // Check id_counter.
-    if (object.ledger.id_counter == null || typeof (object.ledger.id_counter) != "number" ||
-      object.ledger.id_counter < max_id + invalid_id_counter) {
-      invalid_JSON = true;
-      imported_budget.ledger.id_counter = max_id + invalid_id_counter;
-    } else {
-      imported_budget.ledger.id_counter = object.ledger.id_counter;
-    }
-
+    importValidationJSONLedger(imported_budget, object, invalid_JSON);
   }
 
   // Page size validation
@@ -1173,7 +1220,7 @@ function importJSON(object) {
 
   // Page validation
   var max_page = Math.ceil(Object.keys(imported_budget.ledger.transactions).length / imported_budget.page_size) - 1;
-  if (!object.page ||
+  if (!object.page == null ||
     typeof (object.page) != "number" ||
     object.page < 0 || object.page > max_page) {
     invalid_JSON = true;
