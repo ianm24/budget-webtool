@@ -105,7 +105,17 @@
       <span>$<input id="value-input" type="number" step="0.01" placeholder="Value (+ or -)"></span>
       <button id="new-transaction-submit" onclick="addTransaction()">Add Transaction</button>
     </div>
-    <br>
+    <br />
+    <div id="ledger-pagination">
+      <button onclick="setLedgerPage(0)">&lt&lt</button>
+      <button onclick="setLedgerPage(1)">&lt</button>
+      <label id="ledger-page-num">1</label>
+      <button onclick="setLedgerPage(2)">&gt</button>
+      <button onclick="setLedgerPage(3)">&gt&gt</button>
+      <input id="ledger-page-size-input" type="number" step="1" min="1" placeholder="Page Size">
+      <button onclick="setLedgerPageSize(true)">Set Page Size</button>
+      <button onclick="setLedgerPageSize(false)">Set 1 Page</button>
+    </div>
     <table id="ledger-table">
       <tr>
         <th>Date</th>

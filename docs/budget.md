@@ -84,6 +84,12 @@ If a bucket no longer exists, a transaction will display the bucket ID.</p>
 Sorts the ledger by the chosen field.
 Ascending/descending alternates if the same button is pressed multiple times.</p>
 </dd>
+<dt><a href="#BucketBudget.module_setLedgerPage_new">setLedgerPage()</a></dt>
+<dd><p>Sets the current displayed ledger page based on the parameter given.</p>
+</dd>
+<dt><a href="#BucketBudget.module_setLedgerPageSize_new">setLedgerPageSize()</a></dt>
+<dd><p>Sets the number of transactions displayed on one ledger page.</p>
+</dd>
 <dt><a href="#BucketBudget.module_addTransaction_new">addTransaction()</a></dt>
 <dd><p>Run when add transaction button is pressed.
 Takes values from the add new transaction section to add a new transaction to USER_BUDGET.</p>
@@ -154,6 +160,11 @@ Takes the new values for the transaction and changes it in USER_BUDGET if the fi
         * [.updateBucketName(bucket_id, new_bucket_id)](#module_BucketBudget..IncomeFilter+updateBucketName)
     * [~Budget](#module_BucketBudget..Budget)
         * [new Budget()](#new_module_BucketBudget..Budget_new)
+        * [.buckets](#module_BucketBudget..Budget+buckets) : <code>Dictionary.&lt;string, Bucket&gt;</code>
+        * [.income_filters](#module_BucketBudget..Budget+income_filters) : <code>Dictionary.&lt;string, IncomeFilter&gt;</code>
+        * [.ledger](#module_BucketBudget..Budget+ledger) : <code>Ledger</code>
+        * [.page](#module_BucketBudget..Budget+page) : <code>number</code>
+        * [.page_size](#module_BucketBudget..Budget+page_size) : <code>number</code>
         * [.addBucket(name, value)](#module_BucketBudget..Budget+addBucket) ⇒ <code>boolean</code>
         * [.removeBucket(bucket_id)](#module_BucketBudget..Budget+removeBucket) ⇒ <code>boolean</code>
         * [.editBucket(bucket_id, new_bucket_name)](#module_BucketBudget..Budget+editBucket) ⇒ <code>boolean</code>
@@ -165,6 +176,8 @@ Takes the new values for the transaction and changes it in USER_BUDGET if the fi
         * [.editTransaction(date, bucket, description, value, transaction_id)](#module_BucketBudget..Budget+editTransaction) ⇒ <code>boolean</code>
         * [.sortLedger()](#module_BucketBudget..Budget+sortLedger) ⇒ <code>boolean</code>
         * [.setLedgerSortParams(sort_field, sort_dir_asc)](#module_BucketBudget..Budget+setLedgerSortParams) ⇒ <code>any</code>
+        * [.setLedgerPage(page)](#module_BucketBudget..Budget+setLedgerPage) ⇒ <code>boolean</code>
+        * [.setLedgerPageSize(page)](#module_BucketBudget..Budget+setLedgerPageSize) ⇒ <code>boolean</code>
     * [~exportDataFile](#module_BucketBudget..exportDataFile) : <code>string</code>
     * [~USER_BUDGET](#module_BucketBudget..USER_BUDGET) : <code>Budget</code>
     * [~valid_sort_fields](#module_BucketBudget..valid_sort_fields) : <code>Array.&lt;string&gt;</code>
@@ -581,6 +594,11 @@ Goes through each percentage in the filter and updates the bucket if applicable.
 
 * [~Budget](#module_BucketBudget..Budget)
     * [new Budget()](#new_module_BucketBudget..Budget_new)
+    * [.buckets](#module_BucketBudget..Budget+buckets) : <code>Dictionary.&lt;string, Bucket&gt;</code>
+    * [.income_filters](#module_BucketBudget..Budget+income_filters) : <code>Dictionary.&lt;string, IncomeFilter&gt;</code>
+    * [.ledger](#module_BucketBudget..Budget+ledger) : <code>Ledger</code>
+    * [.page](#module_BucketBudget..Budget+page) : <code>number</code>
+    * [.page_size](#module_BucketBudget..Budget+page_size) : <code>number</code>
     * [.addBucket(name, value)](#module_BucketBudget..Budget+addBucket) ⇒ <code>boolean</code>
     * [.removeBucket(bucket_id)](#module_BucketBudget..Budget+removeBucket) ⇒ <code>boolean</code>
     * [.editBucket(bucket_id, new_bucket_name)](#module_BucketBudget..Budget+editBucket) ⇒ <code>boolean</code>
@@ -592,12 +610,44 @@ Goes through each percentage in the filter and updates the bucket if applicable.
     * [.editTransaction(date, bucket, description, value, transaction_id)](#module_BucketBudget..Budget+editTransaction) ⇒ <code>boolean</code>
     * [.sortLedger()](#module_BucketBudget..Budget+sortLedger) ⇒ <code>boolean</code>
     * [.setLedgerSortParams(sort_field, sort_dir_asc)](#module_BucketBudget..Budget+setLedgerSortParams) ⇒ <code>any</code>
+    * [.setLedgerPage(page)](#module_BucketBudget..Budget+setLedgerPage) ⇒ <code>boolean</code>
+    * [.setLedgerPageSize(page)](#module_BucketBudget..Budget+setLedgerPageSize) ⇒ <code>boolean</code>
 
 <a name="new_module_BucketBudget..Budget_new"></a>
 
 #### new Budget()
 Creates an empty budget.
 
+<a name="module_BucketBudget..Budget+buckets"></a>
+
+#### budget.buckets : <code>Dictionary.&lt;string, Bucket&gt;</code>
+Buckets accessed by bucket ID.
+
+**Kind**: instance property of [<code>Budget</code>](#module_BucketBudget..Budget)  
+<a name="module_BucketBudget..Budget+income_filters"></a>
+
+#### budget.income\_filters : <code>Dictionary.&lt;string, IncomeFilter&gt;</code>
+IncomeFilters accessed by filter ID.
+
+**Kind**: instance property of [<code>Budget</code>](#module_BucketBudget..Budget)  
+<a name="module_BucketBudget..Budget+ledger"></a>
+
+#### budget.ledger : <code>Ledger</code>
+The Budget's ledger.
+
+**Kind**: instance property of [<code>Budget</code>](#module_BucketBudget..Budget)  
+<a name="module_BucketBudget..Budget+page"></a>
+
+#### budget.page : <code>number</code>
+The current page of the ledger.
+
+**Kind**: instance property of [<code>Budget</code>](#module_BucketBudget..Budget)  
+<a name="module_BucketBudget..Budget+page_size"></a>
+
+#### budget.page\_size : <code>number</code>
+The current page size of the ledger.
+
+**Kind**: instance property of [<code>Budget</code>](#module_BucketBudget..Budget)  
 <a name="module_BucketBudget..Budget+addBucket"></a>
 
 #### budget.addBucket(name, value) ⇒ <code>boolean</code>
@@ -744,6 +794,31 @@ Sets the sorting parameters of the ledger.
 | --- | --- | --- |
 | sort_field | <code>string</code> | The field the ledger should be sorted by. |
 | sort_dir_asc | <code>boolean</code> | True if ledger sorted in ascending order, false otherwise. |
+
+<a name="module_BucketBudget..Budget+setLedgerPage"></a>
+
+#### budget.setLedgerPage(page) ⇒ <code>boolean</code>
+Sets the ledger page.
+
+**Kind**: instance method of [<code>Budget</code>](#module_BucketBudget..Budget)  
+**Returns**: <code>boolean</code> - False invalid page number, true otherwise.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| page | <code>number</code> | The page to set the ledger to. |
+
+<a name="module_BucketBudget..Budget+setLedgerPageSize"></a>
+
+#### budget.setLedgerPageSize(page) ⇒ <code>boolean</code>
+TODO
+Sets the ledger page size.
+
+**Kind**: instance method of [<code>Budget</code>](#module_BucketBudget..Budget)  
+**Returns**: <code>boolean</code> - False invalid page size, true otherwise.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| page | <code>number</code> | The integer number of transactions for each ledger page. |
 
 <a name="module_BucketBudget..exportDataFile"></a>
 
@@ -995,6 +1070,26 @@ Ascending/descending alternates if the same button is pressed multiple times.
 | field | <code>string</code> | The field to sort by, decided by the sort button. |
 | asc | <code>boolean</code> | True if comparison is ascending, false otherwise, decided by the sort button. |
 | sort_button | <code>Object</code> | The sort button pressed. |
+
+<a name="BucketBudget.module_setLedgerPage_new"></a>
+
+## setLedgerPage()
+Sets the current displayed ledger page based on the parameter given.
+
+
+| Param | Type | Description |
+| --- | --- | --- |
+| page_select | <code>number</code> | 0 for first page, 1 for previous page, 2 for next page, 3 for last page. |
+
+<a name="BucketBudget.module_setLedgerPageSize_new"></a>
+
+## setLedgerPageSize()
+Sets the number of transactions displayed on one ledger page.
+
+
+| Param | Type | Description |
+| --- | --- | --- |
+| take_input | <code>boolean</code> | True is using user input, false if maxing page size. |
 
 <a name="BucketBudget.module_addTransaction_new"></a>
 

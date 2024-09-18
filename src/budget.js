@@ -633,7 +633,7 @@ class Budget {
     /**
      * Buckets accessed by bucket ID.
      * @member {Dictionary<string,Bucket>} buckets
-     * @memberof module:BucketBudget.Budget
+     * @memberof module:BucketBudget~Budget
      * @instance
      */
     this.buckets = {};
@@ -641,7 +641,7 @@ class Budget {
     /**
      * IncomeFilters accessed by filter ID.
      * @member {Dictionary<string,IncomeFilter>} income_filters
-     * @memberof module:BucketBudget.Budget
+     * @memberof module:BucketBudget~Budget
      * @instance
      */
     this.income_filters = {};
@@ -649,10 +649,26 @@ class Budget {
     /**
      * The Budget's ledger.
      * @member {Ledger} ledger
-     * @memberof module:BucketBudget.Budget
+     * @memberof module:BucketBudget~Budget
      * @instance
      */
     this.ledger = new Ledger();
+
+    /**
+     * The current page of the ledger.
+     * @member {number} page
+     * @memberof module:BucketBudget~Budget
+     * @instance
+     */
+    this.page = 0;
+
+    /**
+     * The current page size of the ledger.
+     * @member {number} page_size
+     * @memberof module:BucketBudget~Budget
+     * @instance
+     */
+    this.page_size = 25;
   }
 
   /**
@@ -893,6 +909,37 @@ class Budget {
   setLedgerSortParams(sort_field, sort_dir_asc) {
     return this.ledger.setLedgerSortParams(sort_field, sort_dir_asc);
   }
+
+  /**
+   * Sets the ledger page.
+   * @param {number} page - The page to set the ledger to.
+   * @returns {boolean} False invalid page number, true otherwise.
+   */
+  setLedgerPage(page) {
+    var last_page = Math.ceil(Object.keys(this.ledger.transactions).length / this.page_size) - 1;
+    last_page = Math.max(last_page, 0);
+    if (page < 0 || page > last_page) {
+      return false;
+    }
+
+    this.page = page;
+    return true;
+  }
+
+  /** TODO
+   * Sets the ledger page size.
+   * @param {number} page - The integer number of transactions for each ledger page.
+   * @returns {boolean} False invalid page size, true otherwise.
+   */
+  setLedgerPageSize(page_size) {
+    // -1 indicates showing all transactions on 1 page.
+    if (!page_size >= 1 && page_size != -1) {
+      return false;
+    }
+
+    this.page_size = page_size;
+    return true;
+  }
 }
 
 //===End Budget-related Classes===
@@ -946,7 +993,7 @@ function importJSON(object) {
     }
   }
 
-  // TODO Add all the IncomeFilters.
+  // Add all the IncomeFilters.
   if (!object.income_filters) {
     invalid_JSON = true;
   } else {
@@ -1113,6 +1160,25 @@ function importJSON(object) {
       imported_budget.ledger.id_counter = object.ledger.id_counter;
     }
 
+  }
+
+  // Page size validation
+  if (!object.page_size ||
+    typeof (object.page_size) != "number" ||
+    (!object.page_size >= 1 && object.page_size != -1)) {
+    invalid_JSON = true;
+  } else {
+    imported_budget.page_size = object.page_size;
+  }
+
+  // Page validation
+  var max_page = Math.ceil(Object.keys(imported_budget.ledger.transactions).length / imported_budget.page_size) - 1;
+  if (!object.page ||
+    typeof (object.page) != "number" ||
+    object.page < 0 || object.page > max_page) {
+    invalid_JSON = true;
+  } else {
+    imported_budget.page = object.page;
   }
 
   USER_BUDGET = imported_budget;
@@ -1910,8 +1976,26 @@ function updateLedgerTable() {
   // Get transactions in reverse order added.
   USER_BUDGET.sortLedger();
 
+  // Pagination
+  var ledger_keys = Object.keys(USER_BUDGET.ledger.transactions);
+  var page = USER_BUDGET.page;
+  var page_size = USER_BUDGET.page_size;
+  var first_transaction = page * page_size;
+  var last_transaction = first_transaction + page_size;
+
+  // If set to 1 page display, do so
+  if (page_size == -1) {
+    first_transaction = 0;
+    last_transaction = ledger_keys.length + 1;
+  }
+
+  // Set ledger page number.
+  document.getElementById("ledger-page-num").innerHTML = page + 1;
+
   // Add transactions.
-  for (var ledger_id in USER_BUDGET.ledger.transactions) {
+  // for (var ledger_id in USER_BUDGET.ledger.transactions) {
+  for (var i = first_transaction; i < Math.min(ledger_keys.length, last_transaction); i++) {
+    var ledger_id = ledger_keys[i];
     var transaction = USER_BUDGET.ledger.transactions[ledger_id];
 
     var entry = document.createElement('tr');
@@ -1998,6 +2082,78 @@ function sortLedgerTable(field, asc, sort_button) {
   USER_BUDGET.sortLedger();
 
   // Propagate changes to visual ledger.
+  updateLedgerTable();
+}
+
+
+/**
+ * Sets the current displayed ledger page based on the parameter given.
+ * @param {number} page_select - 0 for first page, 1 for previous page, 2 for next page, 3 for last page.
+ * @module module:BucketBudget.setLedgerPage()
+ */
+function setLedgerPage(page_select) {
+  // Get the correct page.
+  var page = -1;
+  var max_page = Math.ceil(Object.keys(USER_BUDGET.ledger.transactions).length / USER_BUDGET.page_size) - 1;
+  switch (page_select) {
+    case 0:
+      page = 0;
+      break;
+    case 1:
+      page = Math.max(USER_BUDGET.page - 1, 0);
+      break;
+    case 2:
+      page = Math.min(USER_BUDGET.page + 1, max_page);
+      break;
+    case 3:
+      page = max_page;
+      break;
+  }
+
+  // Attempt to set the page.
+  var success = USER_BUDGET.setLedgerPage(page);
+  if (!success) {
+    alert("Invalid page selected.");
+    return;
+  }
+
+  // Update ledger HTML table.
+  updateLedgerTable();
+}
+
+/**
+ * Sets the number of transactions displayed on one ledger page.
+ * @param {boolean} take_input - True is using user input, false if maxing page size.
+ * @module module:BucketBudget.setLedgerPageSize()
+ */
+function setLedgerPageSize(take_input) {
+  // Puts all transactions on 1 page
+  if (!take_input) {
+    USER_BUDGET.setLedgerPageSize(-1);
+    USER_BUDGET.setLedgerPage(0);
+    updateLedgerTable();
+    return;
+  }
+
+  // Get input and validate it.
+  var page_size = Number(document.getElementById("ledger-page-size-input").value);
+  if (page_size == "") {
+    alert("Please add a numeric value for the page size");
+    return;
+  }
+
+  var old_page_size = USER_BUDGET.page_size;
+  var success = USER_BUDGET.setLedgerPageSize(page_size);
+  if (!success) {
+    alert("Invalid Page Size.");
+    return;
+  }
+
+  // Set page based on transactions with current size.
+  var curr_page_first_transaction = USER_BUDGET.page * old_page_size + 1;
+  var new_page = Math.ceil(curr_page_first_transaction / page_size) - 1;
+  USER_BUDGET.setLedgerPage(new_page);
+
   updateLedgerTable();
 }
 
