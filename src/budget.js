@@ -1233,8 +1233,8 @@ function importData() {
         // Wait until read finishes before importing data.
         reader.onloadend = function () {
           var object = JSON.parse(reader.result);
-          importJSON(object);
-          resolve();
+          var invalid_JSON = importJSON(object);
+          resolve(invalid_JSON);
         }
         break;
       // TODO allow csv import
@@ -1248,7 +1248,10 @@ function importData() {
     reader.readAsText(file);
   });
   file_read_promise.then(
-    function () {
+    function (invalid_JSON) {
+      if (invalid_JSON) {
+        alert("JSON was malformed so some values may be inaccurate.");
+      }
       // Propagate changes to bucket table.
       updateBucketTable();
 
