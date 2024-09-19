@@ -1,37 +1,37 @@
 #second-row {
-  display: flex;
+	display: flex;
 }
 
 #bucket-section {
-  width: min-content;
-  margin-right: 1%;
+	width: min-content;
+	margin-right: 1%;
 }
 
 select {
-  max-width: 120px;
-  width: 12vw;
+	max-width: 120px;
+	width: 12vw;
 }
 
 input[type=text],
 input[type=number] {
-  width: 100px;
+	width: 100px;
 }
 
 table {
-  font-family: arial, sans-serif;
-  border-collapse: collapse;
-  max-width: 25%;
-  width: fit-content;
+	font-family: arial, sans-serif;
+	border-collapse: collapse;
+	max-width: 25%;
+	width: fit-content;
 }
 
 td,
 th {
-  border: 1px solid #dddddd;
-  text-align: left;
-  padding: 8px;
-  width: fit-content;
+	border: 1px solid #dddddd;
+	text-align: left;
+	padding: 8px;
+	width: fit-content;
 }
 
 tr:nth-child(even) {
-  background-color: #dddddd;
+	background-color: #dddddd;
 }

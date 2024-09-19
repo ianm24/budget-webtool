@@ -2,131 +2,128 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8" />
-  <title>Budget</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="description" content="" />
-  <link rel="stylesheet" href="style.css">
-  <script src="budget.js"></script>
+	<meta charset="UTF-8" />
+	<title>Budget</title>
+	<meta name="viewport" content="width=device-width,initial-scale=1" />
+	<meta name="description" content="" />
+	<link rel="stylesheet" href="style.css">
+	<script src="budget.js"></script>
 </head>
 
 <body>
-  <h1>Bucket Budget with Ledger</h1>
+	<h1>Bucket Budget with Ledger</h1>
 
-  <div id="first-row data-operations">
-    <h3>Import Data</h3>
-    JSON Data File: <input type="file" id="data-upload" name="data-upload">
-    <button id="data-submit" onclick="importData()">Import File</button>
+	<div id="first-row data-operations">
+		<h3>Import Data</h3>
+		JSON Data File: <input type="file" id="data-upload" name="data-upload">
+		<button id="data-submit" onclick="importData()">Import File</button>
 
-    <h3>Export Data</h3>
-    <button id="data-export-js" onclick="exportData('json')">Export to JSON</button>
-  </div>
-  <!--
-  paginate ledger
-  stretch goal: monthly and yearly insights
-  -->
-  <div id="second-row">
-    <div id="bucket-section">
-      <h2>Buckets</h2>
-      <div id="new-bucket">
-        <p>Add New Bucket Name:</p>
-        <input id="new-bucket-name" type="text" placeholder="Bucket Name">
-        <button id="new-bucket-submit" onclick="addBucket()">Add Bucket</button>
-      </div>
-      <br>
-      <table id="bucket-table">
-        <tr>
-          <th>Bucket</th>
-          <th>Value</th>
-          <th></th>
-          <th></th>
-        </tr>
-      </table>
-    </div>
+		<h3>Export Data</h3>
+		<button id="data-export-js" onclick="exportData('json')">Export to JSON</button>
+	</div>
 
-    <div id="income-filter-section">
-      <h2>Income Filter</h2>
-      <div id="filter-preview">
-        <p>Preview Income Filter:</p>
-        <select id="filter-preview-input">
-          <option value="" disabled selected>Select a filter</option>
-        </select>
-        <input id="income-preview-input" type="number" step="0.01" placeholder="Income">
-        <input id="date-filter-use-input" type="date" autocomplete="date">
-        <br />
-        <button id="filter-preview-submit" onclick="incomeFilterPreviewCheck(true)">Preview Filter</button>
-        <button id="filter-use-submit" onclick="incomeFilterPreviewCheck(false)">Use Filter</button>
-        <button id="filter-edit-submit" onclick="editIncomeFilter(this)">Edit Filter</button>
-        <button id="filter-remove-submit" onclick="removeIncomeFilter()">Remove Filter</button>
-      </div>
-      <div id="new-filter">
-        <p>Add New Income Filter:</p>
-        <input id="new-filter-name" type="text" placeholder="Filter Name">
-        <button id="new-filter-submit" onclick="validateIncomeFilterInputs(true)">Add Filter</button>
-        <button id="reset-filter-table" onclick="updateIncomeFilters()">Reset Table</button>
-      </div>
-      <br>
-      <table id="income-filter-table">
-        <tr>
-          <th>Bucket</th>
-          <th>Percentage</th>
-          <th>Round?</th>
-          <th></th>
-        </tr>
-        <tr>
-          <td>
-            <select class="bucket-input bucket-filter-input">
-              <option value="" disabled selected>Select a bucket</option>
-            </select>
-          </td>
-          <td>
-            <input class="percent-filter-input" type="number" step="0.05" placeholder="% of income">
-          </td>
-          <td>
-            <input class="rounding-filter-input" type="radio" name="filter-rounding-select" checked="true">
-          </td>
-          <td>
-            <button id="new-bucket-filter" onclick="addBucketToFilter(this)">Add New Bucket to Filter</button>
-          </td>
-        </tr>
-      </table>
-    </div>
-  </div>
+	<div id="second-row">
+		<div id="bucket-section">
+			<h2>Buckets</h2>
+			<div id="new-bucket">
+				<p>Add New Bucket Name:</p>
+				<input id="new-bucket-name" type="text" placeholder="Bucket Name">
+				<button id="new-bucket-submit" onclick="addBucket()">Add Bucket</button>
+			</div>
+			<br>
+			<table id="bucket-table">
+				<tr>
+					<th>Bucket</th>
+					<th>Value</th>
+					<th></th>
+					<th></th>
+				</tr>
+			</table>
+		</div>
 
-  <div id="third-row ledger-section">
-    <h2>Ledger</h2>
-    <div id="new-transaction">
-      <p>Add New Transaction:</p>
-      <input id="date-input" type="date" autocomplete="date">
-      <select class="bucket-input" id="bucket-transaction-input">
-        <option value="" disabled selected>Select a bucket</option>
-      </select>
-      <input id="desc-input" type="text" maxlength="128" placeholder="Describe the transaction">
-      <span>$<input id="value-input" type="number" step="0.01" placeholder="Value (+ or -)"></span>
-      <button id="new-transaction-submit" onclick="addTransaction()">Add Transaction</button>
-    </div>
-    <br />
-    <div id="ledger-pagination">
-      <button onclick="setLedgerPage(0)">&lt&lt</button>
-      <button onclick="setLedgerPage(1)">&lt</button>
-      <label id="ledger-page-num">1</label>
-      <button onclick="setLedgerPage(2)">&gt</button>
-      <button onclick="setLedgerPage(3)">&gt&gt</button>
-      <input id="ledger-page-size-input" type="number" step="1" min="1" placeholder="Page Size">
-      <button onclick="setLedgerPageSize(true)">Set Page Size</button>
-      <button onclick="setLedgerPageSize(false)">Set 1 Page</button>
-    </div>
-    <table id="ledger-table">
-      <tr>
-        <th>Date</th>
-        <th>Bucket</th>
-        <th>Description</th>
-        <th>Value</th>
-        <th>Bucket Value Before</th>
-        <th>Bucket Value After</th>
-      </tr>
-    </table>
-  </div>
+		<div id="income-filter-section">
+			<h2>Income Filter</h2>
+			<div id="filter-preview">
+				<p>Preview Income Filter:</p>
+				<select id="filter-preview-input">
+					<option value="" disabled selected>Select a filter</option>
+				</select>
+				<input id="income-preview-input" type="number" step="0.01" placeholder="Income">
+				<input id="date-filter-use-input" type="date" autocomplete="date">
+				<br />
+				<button id="filter-preview-submit" onclick="incomeFilterPreviewCheck(true)">Preview Filter</button>
+				<button id="filter-use-submit" onclick="incomeFilterPreviewCheck(false)">Use Filter</button>
+				<button id="filter-edit-submit" onclick="editIncomeFilter(this)">Edit Filter</button>
+				<button id="filter-remove-submit" onclick="removeIncomeFilter()">Remove Filter</button>
+			</div>
+			<div id="new-filter">
+				<p>Add New Income Filter:</p>
+				<input id="new-filter-name" type="text" placeholder="Filter Name">
+				<button id="new-filter-submit" onclick="validateIncomeFilterInputs(true)">Add Filter</button>
+				<button id="reset-filter-table" onclick="updateIncomeFilters()">Reset Table</button>
+			</div>
+			<br>
+			<table id="income-filter-table">
+				<tr>
+					<th>Bucket</th>
+					<th>Percentage</th>
+					<th>Round?</th>
+					<th></th>
+				</tr>
+				<tr>
+					<td>
+						<select class="bucket-input bucket-filter-input">
+							<option value="" disabled selected>Select a bucket</option>
+						</select>
+					</td>
+					<td>
+						<input class="percent-filter-input" type="number" step="0.05" placeholder="% of income">
+					</td>
+					<td>
+						<input class="rounding-filter-input" type="radio" name="filter-rounding-select" checked="true">
+					</td>
+					<td>
+						<button id="new-bucket-filter" onclick="addBucketToFilter(this)">Add New Bucket to Filter</button>
+					</td>
+				</tr>
+			</table>
+		</div>
+	</div>
+
+	<div id="third-row ledger-section">
+		<h2>Ledger</h2>
+		<div id="new-transaction">
+			<p>Add New Transaction:</p>
+			<input id="date-input" type="date" autocomplete="date">
+			<select class="bucket-input" id="bucket-transaction-input">
+				<option value="" disabled selected>Select a bucket</option>
+			</select>
+			<input id="desc-input" type="text" maxlength="128" placeholder="Describe the transaction">
+			<span>$<input id="value-input" type="number" step="0.01" placeholder="Value (+ or -)"></span>
+			<button id="new-transaction-submit" onclick="addTransaction()">Add Transaction</button>
+		</div>
+		<br />
+		<div id="ledger-pagination">
+			<button onclick="setLedgerPage(0)">&lt&lt</button>
+			<button onclick="setLedgerPage(1)">&lt</button>
+			<label id="ledger-page-num">1</label>
+			<button onclick="setLedgerPage(2)">&gt</button>
+			<button onclick="setLedgerPage(3)">&gt&gt</button>
+			<input id="ledger-page-size-input" type="number" step="1" min="1" placeholder="Page Size">
+			<button onclick="setLedgerPageSize(true)">Set Page Size</button>
+			<button onclick="setLedgerPageSize(false)">Set 1 Page</button>
+		</div>
+		<table id="ledger-table">
+			<tr>
+				<th>Date</th>
+				<th>Bucket</th>
+				<th>Description</th>
+				<th>Value</th>
+				<th>Bucket Value Before</th>
+				<th>Bucket Value After</th>
+			</tr>
+		</table>
+	</div>
 
 </body>
 
