@@ -11,7 +11,8 @@ select {
 
 input[type=text],
 input[type=number] {
-	width: 100px;
+	max-width: 155px;
+	width: 12vw;
 }
 
 table {
@@ -23,7 +24,7 @@ table {
 
 td,
 th {
-	border: 1px solid #bbbbbb;
+	border: 2px solid #dddddd;
 	text-align: left;
 	padding: 8px;
 	width: fit-content;

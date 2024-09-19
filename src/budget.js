@@ -1473,6 +1473,9 @@ function removeBucket(bucket_id) {
 
 	// Propagate changes to bucket table.
 	updateBucketTable();
+
+	// Propagate changes to the ledger table.
+	updateLedgerTable();
 }
 
 /**
@@ -2057,7 +2060,7 @@ function updateLedgerTable() {
 			if (header_labels[i].toLowerCase() == USER_BUDGET.ledger.sort_field) {
 				sort_function = "sortLedgerTable('" + header_labels[i].toLowerCase() + "'," +
 					!USER_BUDGET.ledger.sort_dir_asc + ",this)";
-				button_text += USER_BUDGET.ledger.sort_dir_asc ? " v" : " ^";
+				button_text += USER_BUDGET.ledger.sort_dir_asc ? " ^" : " v";
 			}
 
 			sort_button.setAttribute("onclick", sort_function);
@@ -2135,18 +2138,23 @@ function updateLedgerTable() {
 		entry.appendChild(buck_bef_entry);
 		entry.appendChild(buck_aft_entry);
 
-		// Edit and remove buttons won't show on bucket name change transactions.
-		if (!(transaction.date == "" && transaction.value == 0)) {
-			var edit_button = document.createElement('td');
+
+		// Edit buttons won't show on bucket name change transactions or transactions with removed buckets.
+		var edit_button = document.createElement('td');
+		if (!(transaction.date == "" && transaction.value == 0) &&
+			USER_BUDGET.buckets[transaction.bucket] != null) {
 			edit_button.innerHTML = "<button class='transaction-edit' onclick='editTransaction(\"" +
 				ledger_id + "\",this)'>Edit</button>"
+		}
+		entry.appendChild(edit_button);
 
-			var remove_button = document.createElement('td');
+		// Remove buttons won't show on bucket name change transactions.
+		var remove_button = document.createElement('td');
+		if (!(transaction.date == "" && transaction.value == 0)) {
 			remove_button.innerHTML = "<button class='transaction-remove' onclick='removeTransaction(\"" +
 				ledger_id + "\")'>Remove</button>"
-			entry.appendChild(edit_button);
-			entry.appendChild(remove_button);
 		}
+		entry.appendChild(remove_button);
 
 		// Add entry to table.
 		table.appendChild(entry);
