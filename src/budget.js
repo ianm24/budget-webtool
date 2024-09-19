@@ -168,11 +168,11 @@ class Transaction {
 		// TODO make sorting by this keep a consistent date sort within bucket.
 		// var date_sort_val = Transaction.dateCompare(a, b, false);
 		if (a["bucket"] > b["bucket"]) {
-			var bucket_sort_val = -1 * Math.pow(-1, 1 + asc);
+			var bucket_sort_val = 1 * Math.pow(-1, 1 + asc);
 			return bucket_sort_val;
 		}
 		if (b["bucket"] > a["bucket"]) {
-			var bucket_sort_val = 1 * Math.pow(-1, 1 + asc);
+			var bucket_sort_val = -1 * Math.pow(-1, 1 + asc);
 			return bucket_sort_val;
 		}
 		return 0;
@@ -1891,6 +1891,13 @@ function incomeFilterPreviewCheck(preview_or_use) {
 	var rounding_bucket_idx;
 	for (var i = 0; i < filter_keys.length; i++) {
 		var filter_key = filter_keys[i];
+
+		// Check if a bucket was removed.
+		if (USER_BUDGET.buckets[filter_key] == null) {
+			alert("A bucket used in this filter has been deleted. Please edit the filter and choose an available bucket.")
+			return;
+		}
+
 		if (filter_key == filter.rounding_bucket) {
 			rounding_bucket_idx = i;
 		}
