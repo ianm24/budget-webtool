@@ -1,6 +1,6 @@
 /** @module BucketBudget */
 
-//===Start Budget-related Classes===
+// ===Start Budget-related Classes===
 
 /**
  * Holds a budget bucket's name and value.
@@ -144,7 +144,7 @@ class Transaction {
     var date_sort_val = Math.pow(-1, 1 + asc) * date_a + Math.pow(-1, asc) * date_b;
     var id_sort_val = Math.pow(-1, 1 + asc) * a.id + Math.pow(-1, asc) * b.id;
 
-    // For bucket renames, ignore date
+    // For bucket renames, ignore date.
     if (a.date == "" || b.date == "") {
       date_sort_val = 0;
     }
@@ -159,7 +159,7 @@ class Transaction {
    * @returns {number} Numerical sort value that is negative if a < b, 0 if a=b, positive if a > b (pos and neg switch if asc is false).
    */
   static bucketCompare(a, b, asc) {
-    // TODO make sorting by this keep a consistent date sort within bucket
+    // TODO make sorting by this keep a consistent date sort within bucket.
     // var date_sort_val = Transaction.dateCompare(a, b, false);
     if (a["bucket"] > b["bucket"]) {
       var bucket_sort_val = -1 * Math.pow(-1, 1 + asc);
@@ -322,7 +322,7 @@ class Ledger {
     }
     this.transactions[ledger_id].bucket_before = new_bucket_before;
 
-    // update the rest of the transactions in this bucket
+    // Update the rest of the transactions in this bucket.
     new_bucket_vals[1][1] = this.updateLedger(before_id);
 
     // Sort ledger by its sort parameters.
@@ -332,8 +332,8 @@ class Ledger {
 
   /**
    * Sorts the transactions dictionary by a field in ascending or descending order.
-   * @param {any} [field=this.sort_field] - The field to sort the ledger by.
-   * @param {any} [asc=this.sort_dir_asc] - True if ledger sorted in ascending order, false otherwise.
+   * @param {string} [field=this.sort_field] - The field to sort the ledger by.
+   * @param {boolean} [asc=this.sort_dir_asc] - True if ledger sorted in ascending order, false otherwise.
    */
   sortLedger(field = this.sort_field, asc = this.sort_dir_asc) {
     var existing_transactions = this.transactions;
@@ -373,7 +373,7 @@ class Ledger {
    * Sets the sorting parameters of the ledger.
    * @param {string} field - The field the ledger should be sorted by.
    * @param {boolean} asc - True if ledger sorted in ascending order, false otherwise.
-   * @returns {any} False if field or parameter types are invalid, true otherwise.
+   * @returns {boolean} False if field or parameter types are invalid, true otherwise.
    */
   setLedgerSortParams(field, asc) {
     if (!valid_sort_fields.includes(field) || typeof (asc) != "boolean") {
@@ -400,7 +400,7 @@ class Ledger {
     var transaction = this.transactions[ledger_id];
     var target_bucket = transaction.bucket;
 
-    // Get the transaction in this bucket before this and note its bucket after.
+    // In the associated bucket get the transaction before this and note its bucket after.
     var ledger_ids = Object.keys(this.transactions);
     var ledger_id_key_idx = ledger_ids.indexOf(ledger_id);
 
@@ -418,7 +418,7 @@ class Ledger {
       }
     }
 
-    // Get the transaction in this bucket after this and set its before to the other's after.
+    // In the associated bucket get the transaction after this and set its before to the other's after.
     var after_id = ledger_id;
 
     // Assumes ledger is sorted by date in descending order.
@@ -471,12 +471,12 @@ class Ledger {
   /**
    * Goes through each transaction in the ledger and updates the bucket if applicable.
    * @param {Bucket} bucket - The bucket existing transactions are in.
-   * @param {any} new_bucket_id - The new ID for the bucket.
-   * @param {any} new_bucket_name - The new display name for the bucket
+   * @param {string} new_bucket_id - The new ID for the bucket.
+   * @param {string} new_bucket_name - The new display name for the bucket
    */
   updateBucketName(bucket, new_bucket_id, new_bucket_name) {
 
-    // Add transaction in bucket to indicate changed name.
+    // Add a transaction in the bucket to indicate changed name.
     var bucket_name = bucket.display_name;
     var bucket_id = bucket_name.toLowerCase().replaceAll(" ", "_");
     var bucket_val = bucket.value;
@@ -555,12 +555,12 @@ class IncomeFilter {
    * @return {boolean} False if percentages don't add to 100.00 or bucket_ids.length != percentages.length, True otherwise.
    */
   setBucketPercentages(bucket_ids, percentages) {
-    // Verify array sizes are equal
+    // Verify array sizes are equal.
     if (bucket_ids.length != percentages.length) {
       return false;
     }
 
-    // Get the sum of the percentages and make sure it adds to 100.00
+    // Get the sum of the percentages and make sure it adds to 100.00.
     var percentages_sum = percentages.reduce(function (sum, curr_val) {
       return Number((sum + curr_val).toFixed(2))
     }, 0);
@@ -569,13 +569,13 @@ class IncomeFilter {
       return false;
     }
 
-    // Don't allow using the same bucket twice
+    // Don't allow using the same bucket twice.
     var hasDuplicates = (new Set(bucket_ids)).size !== bucket_ids.length;
     if (hasDuplicates) {
       return false;
     }
 
-    // Put the percentages in the filter
+    // Put the percentages in the filter.
     for (var i = 0; i < bucket_ids.length; i++) {
       this.bucket_percentages[bucket_ids[i]] = percentages[i];
     }
@@ -612,7 +612,7 @@ class IncomeFilter {
    */
   updateBucketName(bucket_id, new_bucket_id) {
     if (this.bucket_percentages[bucket_id] != null) {
-      // Update key (using defineProperty preserves order of percentages).
+      // Update key (using defineProperty should preserve order of percentages).
       Object.defineProperty(this.bucket_percentages, new_bucket_id,
         Object.getOwnPropertyDescriptor(this.bucket_percentages, bucket_id));
       delete this.bucket_percentages[bucket_id];
@@ -703,7 +703,7 @@ class Budget {
   /**
    * Edits an existing bucket in the dictionary and updates transactions in ledger to have updated bucket.
    * @param {string} bucket_id - The bucket ID (key) of the bucket to edit.
-   * @param {any} new_bucket_name - New display name for the bucket.
+   * @param {string} new_bucket_name - New display name for the bucket.
    * @returns {boolean} False if new name causes a duplicate ID, true otherwise.
    */
   editBucket(bucket_id, new_bucket_name) {
@@ -722,7 +722,7 @@ class Budget {
       this.income_filters[filter_keys[i]].updateBucketName(bucket_id, new_bucket_id);
     }
 
-    // Update key and display name (using defineProperty preserves order of buckets).
+    // Update key and display name (using defineProperty should preserve order of buckets).
     Object.defineProperty(this.buckets, new_bucket_id, Object.getOwnPropertyDescriptor(this.buckets, bucket_id));
     this.buckets[new_bucket_id].display_name = new_bucket_name;
     delete this.buckets[bucket_id];
@@ -766,7 +766,7 @@ class Budget {
       return false;
     }
 
-    // Add valid income filter to the dictionary
+    // Add valid income filter to the dictionary.
     this.income_filters[filter_id] = new_income_filter;
     return true;
   }
@@ -824,7 +824,7 @@ class Budget {
       return false;
     }
 
-    // Update key and display name (using defineProperty preserves order of filters).
+    // Update key and display name (using defineProperty should preserve order of filters).
     if (changed_name) {
       Object.defineProperty(this.income_filters, new_filter_id, Object.getOwnPropertyDescriptor(this.income_filters, filter_id));
       this.income_filters[new_filter_id].display_name = new_filter_name;
@@ -881,7 +881,7 @@ class Budget {
       this.ledger.transactions[transaction_id].bucket_before
     );
 
-    // Update bucket values, if new and old buckets are the same, the new value overwrites the old one.
+    // Update bucket values. If new and old buckets are the same, the new value overwrites the old one.
     var bucket_vals = this.ledger.editTransaction(transaction_id, new_transaction);
     this.buckets[bucket_vals[0][0]].value = bucket_vals[0][1];
     this.buckets[bucket_vals[1][0]].value = bucket_vals[1][1];
@@ -902,7 +902,7 @@ class Budget {
    * Sets the sorting parameters of the ledger.
    * @param {string} sort_field - The field the ledger should be sorted by.
    * @param {boolean} sort_dir_asc - True if ledger sorted in ascending order, false otherwise.
-   * @returns {any} False if field or parameter types are invalid, true otherwise.
+   * @returns {boolean} False if field or parameter types are invalid, true otherwise.
    */
   setLedgerSortParams(sort_field, sort_dir_asc) {
     return this.ledger.setLedgerSortParams(sort_field, sort_dir_asc);
@@ -924,7 +924,7 @@ class Budget {
     return true;
   }
 
-  /** TODO
+  /**
    * Sets the ledger page size.
    * @param {number} page - The integer number of transactions for each ledger page.
    * @returns {boolean} False invalid page size, true otherwise.
@@ -940,9 +940,9 @@ class Budget {
   }
 }
 
-//===End Budget-related Classes===
+// ===End Budget-related Classes===
 
-//===Start File Import/Export Functions===
+// ===Start File Import/Export Functions===
 
 /**
  * Validates imported JSON buckets and adds them to the imported_budget.
@@ -986,7 +986,7 @@ function importValidationJSONBuckets(imported_budget, JSON_object, invalid_JSON)
  * @param {Budget} imported_budget - The constructed budget so far.
  * @param {Object} curr_filter - JSON object containing unvalidated filter.
  * @param {boolean} invalid_JSON - Value to keep track of any JSON malformities.
- * @return {[string[],Number[]]} - The bucket_ids and percentages for the filter.
+ * @return {[string[],Number[]]} [bucket_ids, percentages] - The bucket IDs and percentages for the filter.
  * @module module:BucketBudget.importValidationJSONIncomeFiltersBucketPercentages()
  */
 function importValidationJSONIncomeFiltersBucketPercentages(imported_budget, curr_filter, invalid_JSON) {
@@ -998,13 +998,13 @@ function importValidationJSONIncomeFiltersBucketPercentages(imported_budget, cur
     var curr_bucket_id = filter_bucket_id_keys[j];
     var curr_percentage = curr_filter.bucket_percentages[curr_bucket_id];
 
-    // Verify bucket ID is valid
+    // Verify bucket ID is valid.
     if (typeof (curr_bucket_id) != "string" || imported_budget.buckets[curr_bucket_id] == null) {
       invalid_JSON = true;
       curr_bucket_id = "INVALID_JSON_INCOME_FILTER_BUCKET" + j;
     }
 
-    // Verify percentage is valid
+    // Verify percentage is valid.
     if (typeof (curr_percentage) != "number" || curr_percentage != Number(curr_percentage.toFixed(2))) {
       invalid_JSON = true;
       curr_percentage = 0.00;
@@ -1015,7 +1015,7 @@ function importValidationJSONIncomeFiltersBucketPercentages(imported_budget, cur
     percentage_sum = Number((percentage_sum + curr_percentage).toFixed(2));
   }
 
-  // Verify percentage sum is valid
+  // Verify percentage sum is valid.
   if (percentage_sum != 100.00) {
     bucket_ids.push("INVALID_JSON_INCOME_FILTER_SUM");
     percentages.push(Number((100.00 - percentage_sum).toFixed(2)));
@@ -1184,8 +1184,9 @@ function importJSON(object) {
 
   // If there are any objects that aren't correctly defined in the import file, let user know.
   // TODO make this more informative:
-  // [bucket_display_name,bucket_value,duplicate_bucket,sort_field,sort_dir_asc,ledger_transactions,
-  // transaction(id,date,bucket,bucket_before,value,description)]
+  // [bucket_display_name,bucket_value,duplicate_bucket,income_filter(id,bucket_ids,percentages),
+  // sort_field,sort_dir_asc,ledger_transactions, transaction(id,date,bucket,bucket_before,value,description),
+  // page_size, page]
   var invalid_JSON = false;
 
   // Add all the buckets.
@@ -1209,7 +1210,7 @@ function importJSON(object) {
     importValidationJSONLedger(imported_budget, object, invalid_JSON);
   }
 
-  // Page size validation
+  // Page size validation.
   if (!object.page_size ||
     typeof (object.page_size) != "number" ||
     (!object.page_size >= 1 && object.page_size != -1)) {
@@ -1218,7 +1219,7 @@ function importJSON(object) {
     imported_budget.page_size = object.page_size;
   }
 
-  // Page validation
+  // Page validation.
   var max_page = Math.ceil(Object.keys(imported_budget.ledger.transactions).length / imported_budget.page_size) - 1;
   if (!object.page == null ||
     typeof (object.page) != "number" ||
@@ -1284,7 +1285,7 @@ function importData() {
           resolve(invalid_JSON);
         }
         break;
-      // TODO allow csv import
+      // TODO allow csv import.
     }
 
     // Handle errors.
@@ -1321,12 +1322,12 @@ function importData() {
  * @module module:BucketBudget.exportData()
  */
 function exportData(filetype) {
-  // Set object URL for the current budget
+  // Set object URL for the current budget.
   switch (filetype) {
     case 'json':
       exportJSON(USER_BUDGET);
       break;
-    // TODO allow csv export
+    // TODO allow csv export.
   }
 
   // Click the object URL link to download.
@@ -1472,7 +1473,7 @@ function editBucket(bucket_id, edit_button) {
  * @module module:BucketBudget.cancelBucketEdit()
  */
 function cancelBucketEdit(bucket_id, cancel_button) {
-  // Replace input with plane-text of the bucket's display name.
+  // Replace input with plain-text of the bucket's display name.
   var cell = document.getElementById(bucket_id);
   cell.innerHTML = USER_BUDGET.buckets[bucket_id].display_name;
 
@@ -1539,7 +1540,7 @@ function updateIncomeFilters() {
   filter_name_box.setAttribute("old_value", "");
   filter_name_box.value = "";
 
-  // Reset add, edit, and reset buttons
+  // Reset the add, edit, and reset buttons.
   var edit_button = document.getElementById("filter-edit-submit");
   edit_button.style = "visibility: visible;";
 
@@ -1611,7 +1612,7 @@ function updateIncomeFilters() {
   input_row.appendChild(rounding_radio);
   input_row.appendChild(button);
 
-  // Construct table
+  // Construct table.
   var new_table = document.createElement("tbody");
   new_table.appendChild(header_row);
   new_table.appendChild(input_row);
@@ -1633,7 +1634,7 @@ function validateIncomeFilterInputs(add_or_edit) {
     return;
   }
 
-  // Get all the buckets, percentages, and rounding bucket
+  // Get all the buckets, percentages, and rounding bucket.
   var filter_buckets = document.getElementsByClassName("bucket-filter-input");
   var filter_percentages = document.getElementsByClassName("percent-filter-input");
   var filter_rounding_radios = document.getElementsByClassName("rounding-filter-input");
@@ -1677,7 +1678,7 @@ function addIncomeFilter(new_filter_name, bucket_ids, percentages, rounding_buck
     return;
   }
 
-  // Update filter selector and reset income filter table
+  // Update filter selector and reset income filter table.
   updateIncomeFilters();
 }
 
@@ -1722,7 +1723,7 @@ function editIncomeFilter(edit_button) {
   submit_button.setAttribute("id", "filter-submit-edit");
   submit_button.setAttribute("onclick", "validateIncomeFilterInputs(false)");
 
-  // Change Reset Table button text to Cancel Edit
+  // Change Reset Table button text to Cancel Edit.
   var cancel_button = document.getElementById("reset-filter-table");
   cancel_button.innerHTML = "Cancel Edit";
 
@@ -1731,7 +1732,7 @@ function editIncomeFilter(edit_button) {
   filter_name_box.setAttribute("old_value", filter_id);
   filter_name_box.value = filter.display_name;
 
-  // Set first input row
+  // Set first input row.
   var bucket_ids = Object.keys(filter.bucket_percentages);
 
   var table = document.getElementById("income-filter-table");
@@ -1810,7 +1811,7 @@ function confirmIncomeFilterEdit(filter_id, new_filter_name, bucket_ids, percent
     return;
   }
 
-  // Update filter selector and reset income filter table
+  // Update filter selector and reset income filter table.
   updateIncomeFilters();
 }
 
@@ -1843,10 +1844,10 @@ function incomeFilterPreviewCheck(preview_or_use) {
     }
   }
 
-  // User income filter table to preview the filter with the specified income.
+  // Use income filter table to preview the filter with the specified income.
   var filter = USER_BUDGET.income_filters[filter_id];
 
-  // Calculate money for each bucket beforehand in case of rounding
+  // Calculate money for each bucket beforehand in case of rounding.
   var filter_keys = Object.keys(filter.bucket_percentages);
   var amounts = Array(filter_keys.length).fill(0);
   var rounding_bucket_idx;
@@ -1878,7 +1879,7 @@ function incomeFilterPreviewCheck(preview_or_use) {
  * @module module:BucketBudget.previewIncomeFilter()
  */
 function previewIncomeFilter(bucket_ids, amounts) {
-  // Update table
+  // Update table.
   var table = document.getElementById("income-filter-table");
   table.innerHTML = "";
 
@@ -1978,7 +1979,7 @@ function addBucketToFilter(new_bucket_button) {
 }
 
 function removeBucketFromFilter(remove_button) {
-  // Remove the row from the table
+  // Remove the row from the table.
   var remove_row = remove_button.parentElement.parentElement;
   remove_row.remove();
 }
@@ -2023,17 +2024,17 @@ function updateLedgerTable() {
   }
   table.appendChild(header);
 
-  // Get transactions in reverse order added.
+  // Sort transactions according to sort parameters.
   USER_BUDGET.sortLedger();
 
-  // Pagination
+  // Ledger pagination.
   var ledger_keys = Object.keys(USER_BUDGET.ledger.transactions);
   var page = USER_BUDGET.page;
   var page_size = USER_BUDGET.page_size;
   var first_transaction = page * page_size;
   var last_transaction = first_transaction + page_size;
 
-  // If set to 1 page display, do so
+  // If set to 1 page display, do so.
   if (page_size == -1) {
     first_transaction = 0;
     last_transaction = ledger_keys.length + 1;
@@ -2043,7 +2044,6 @@ function updateLedgerTable() {
   document.getElementById("ledger-page-num").innerHTML = page + 1;
 
   // Add transactions.
-  // for (var ledger_id in USER_BUDGET.ledger.transactions) {
   for (var i = first_transaction; i < Math.min(ledger_keys.length, last_transaction); i++) {
     var ledger_id = ledger_keys[i];
     var transaction = USER_BUDGET.ledger.transactions[ledger_id];
@@ -2177,7 +2177,7 @@ function setLedgerPage(page_select) {
  * @module module:BucketBudget.setLedgerPageSize()
  */
 function setLedgerPageSize(take_input) {
-  // Puts all transactions on 1 page
+  // Puts all transactions on 1 page.
   if (!take_input) {
     USER_BUDGET.setLedgerPageSize(-1);
     USER_BUDGET.setLedgerPage(0);
@@ -2199,7 +2199,7 @@ function setLedgerPageSize(take_input) {
     return;
   }
 
-  // Set page based on transactions with current size.
+  // Set page based on currently viewed transactions and current page size.
   var curr_page_first_transaction = USER_BUDGET.page * old_page_size + 1;
   var new_page = Math.ceil(curr_page_first_transaction / page_size) - 1;
   USER_BUDGET.setLedgerPage(new_page);
@@ -2384,7 +2384,7 @@ function confirmTransactionEdit(transaction_id) {
 
 // ===End Front-end/HTML Functions===
 
-//===Start Constants and Variables===
+// ===Start Constants and Variables===
 /**
  * List of fields that can be sorted by.
  * @constant {string[]}
@@ -2397,7 +2397,7 @@ const valid_sort_fields = ["id", "date", "bucket", "value"];
  */
 const valid_file_import_types = ["application/json"];
 
-//TODO add customizable formatters for different currencies
+// TODO add customizable formatters for different currencies.
 /**
  * Formats numbers to currency for proper display.
  * @constant {Intl.NumberFormat}
@@ -2420,4 +2420,4 @@ var exportDataFile = null;
  */
 var USER_BUDGET = new Budget();
 
-//===End Constands and Variables===
+// ===End Constands and Variables===
