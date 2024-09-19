@@ -51,8 +51,10 @@ class Transaction {
 	 * Transaction Constructor
 	 * @param {number} id - Identifying number for the transaction.
 	 * @param {string} date - Date the transaction occurred in YYYY-MM-DD format.
-	 * @param {string} bucket - The bucket this transaction is in. Budget.buckets is used to get the Bucket object associated with this.
-	 * @param {string} description - Description of the transaction. Generally 128 characters or shorter.
+	 * @param {string} bucket - The bucket this transaction is in.
+	 * Budget.buckets is used to get the Bucket object associated with this.
+	 * @param {string} description - Description of the transaction.
+	 * Generally 128 characters or shorter.
 	 * @param {number} value - Value of the transaction rounded to 2 decimal places.
 	 * @param {number} bucket_before - Value of the associated bucket prior to this transaction.
 	 */
@@ -76,7 +78,8 @@ class Transaction {
 		this.date = date;
 
 		/**
-		 * The bucket this transaction is in. Budget.buckets is used to get the Bucket object associated with this.
+		 * The bucket this transaction is in.
+		 * Budget.buckets is used to get the Bucket object associated with this.
 		 * @member {string} bucket
 		 * @memberof module:BucketBudget~Transaction
 		 * @instance
@@ -123,7 +126,8 @@ class Transaction {
 	 * @param {Transaction} b - Second Transaction to compare fields.
 	 * @param {boolean} asc - True if comparison is ascending, false otherwise.
 	 * @param {string} field - Numeric field to sort by.
-	 * @returns {number} Numerical sort value that is negative if a < b, 0 if a=b, positive if a > b (pos and neg switch if asc is false).
+	 * @returns {number} Numerical sort value that is negative if a < b, 0 if a=b, positive if a > b
+	 * (pos and neg switch if asc is false).
 	 */
 	static numericCompare(a, b, asc, field) {
 		return Math.pow(-1, 1 + asc) * a[field] + Math.pow(-1, asc) * b[field];
@@ -134,7 +138,8 @@ class Transaction {
 	 * @param {Transaction} a - First Transaction to compare dates.
 	 * @param {Transaction} b - Second Transaction to compare dates.
 	 * @param {boolean} asc - True if comparison is ascending, false otherwise.
-	 * @returns {number} Numerical sort value that is negative if a < b, 0 if a=b, positive if a > b (pos and neg switch if asc is false).
+	 * @returns {number} Numerical sort value that is negative if a < b, 0 if a=b, positive if a > b
+	 * (pos and neg switch if asc is false).
 	 */
 	static dateCompare(a, b, asc) {
 		var date_a = new Date(a.date);
@@ -156,7 +161,8 @@ class Transaction {
 	 * @param {Transaction} a - First Transaction to compare buckets.
 	 * @param {Transaction} b - Second Transaction to compare buckets.
 	 * @param {boolean} asc - True if comparison is ascending, false otherwise.
-	 * @returns {number} Numerical sort value that is negative if a < b, 0 if a=b, positive if a > b (pos and neg switch if asc is false).
+	 * @returns {number} Numerical sort value that is negative if a < b, 0 if a=b, positive if a > b
+	 * (pos and neg switch if asc is false).
 	 */
 	static bucketCompare(a, b, asc) {
 		// TODO make sorting by this keep a consistent date sort within bucket.
@@ -388,7 +394,8 @@ class Ledger {
 	/**
 	 * Given a transaction, finds the transactions before and after it within the same bucket.
 	 * @param {string} ledger_id - The ledger ID (key) of the transaction to get adjacent transactions from.
-	 * @returns {string[]} [before_id,after_id] - The ledger IDs (keys) of the transactions before and after within the associated bucket.
+	 * @returns {string[]} [before_id,after_id] -
+	 * The ledger IDs (keys) of the transactions before and after within the associated bucket.
 	 * The before_id will be ledger_id if the transaction is the first in the bucket.
 	 * The after_id will be ledger_id if the transaction is the last in the bucket.
 	 */
@@ -515,7 +522,7 @@ class IncomeFilter {
 	 * bucket_ids[i] should correspond with percentages[i].
 	 * @param {number[]} [percentages=[]] - The percentages of income to go into each bucket rounded to 2 decimal places.
 	 * percentages[i] should correspond with bucket_ids[i].
-	 * @param {string} rounding_bucket - The ID of the bucket that will be affected by any rounding errors, positive or negative.
+	 * @param {string} rounding_bucket - The ID of the bucket that will be affected by any (+ or -) rounding errors.
 	 */
 	constructor(display_name, bucket_ids = [], percentages = [], rounding_bucket) {
 		/**
@@ -552,7 +559,8 @@ class IncomeFilter {
 	 * bucket_ids[i] should correspond with percentages[i].
 	 * @param {number[]} percentages - The percentages of income to go into each bucket rounded to 2 decimal places.
 	 * percentages[i] should correspond with bucket_ids[i].
-	 * @return {boolean} False if percentages don't add to 100.00 or bucket_ids.length != percentages.length, True otherwise.
+	 * @return {boolean} False if percentages don't add to 100.00 or
+	 * bucket_ids.length != percentages.length, True otherwise.
 	 */
 	setBucketPercentages(bucket_ids, percentages) {
 		// Verify array sizes are equal.
@@ -593,7 +601,7 @@ class IncomeFilter {
 
 	/**
 	 * Sets the rounding bucket
-	 * @param {string} rounding_bucket - The ID of the bucket that will be affected by any rounding errors, positive or negative.
+	 * @param {string} rounding_bucket - The ID of the bucket that will be affected by any (+ or -) rounding errors.
 	 * @returns {boolean} False if rounding bucket is not used in filter, true otherwise.
 	 */
 	setRoundingBucket(rounding_bucket) {
@@ -723,7 +731,8 @@ class Budget {
 		}
 
 		// Update key and display name (using defineProperty should preserve order of buckets).
-		Object.defineProperty(this.buckets, new_bucket_id, Object.getOwnPropertyDescriptor(this.buckets, bucket_id));
+		Object.defineProperty(this.buckets, new_bucket_id,
+			Object.getOwnPropertyDescriptor(this.buckets, bucket_id));
 		this.buckets[new_bucket_id].display_name = new_bucket_name;
 		delete this.buckets[bucket_id];
 
@@ -737,7 +746,7 @@ class Budget {
 	 * bucket_ids[i] should correspond with percentages[i].
 	 * @param {number[]} percentages - The percentages of income to go into each bucket rounded to 2 decimal places.
 	 * percentages[i] should correspond with bucket_ids[i].
-	 * @param {string} rounding_bucket - The ID of the bucket that will be affected by any rounding errors, positive or negative.
+	 * @param {string} rounding_bucket - The ID of the bucket that will be affected by any (+ or -) rounding errors.
 	 * @return {boolean} False if percentages don't add to 100.00, bucket_ids.length != percentages.length,
 	 * bucket_ids/rounding bucket are not present within the budget, rounding bucket not in filter,
 	 * or filter_name is duplicate, True otherwise.
@@ -762,7 +771,9 @@ class Budget {
 		}
 
 		var new_income_filter = new IncomeFilter(filter_name, bucket_ids, percentages, rounding_bucket);
-		if (JSON.stringify(new_income_filter.bucket_percentages) == "{}" || new_income_filter.rounding_bucket == "") {
+		if (JSON.stringify(new_income_filter.bucket_percentages) == "{}" ||
+			new_income_filter.rounding_bucket == "") {
+
 			return false;
 		}
 
@@ -793,7 +804,7 @@ class Budget {
 	 * bucket_ids[i] should correspond with percentages[i].
 	 * @param {number[]} percentages - The percentages of income to go into each bucket rounded to 2 decimal places.
 	 * percentages[i] should correspond with bucket_ids[i].
-	 * @param {string} rounding_bucket - The ID of the bucket that will be affected by any rounding errors, positive or negative.
+	 * @param {string} rounding_bucket - The ID of the bucket that will be affected by any (+ or -) rounding errors.
 	 * @return {boolean} False if percentages don't add to 100.00, bucket_ids.length != percentages.length,
 	 * bucket_ids are not present within the budget, or filter_name is duplicate, True otherwise.
 	 */
@@ -826,7 +837,8 @@ class Budget {
 
 		// Update key and display name (using defineProperty should preserve order of filters).
 		if (changed_name) {
-			Object.defineProperty(this.income_filters, new_filter_id, Object.getOwnPropertyDescriptor(this.income_filters, filter_id));
+			Object.defineProperty(this.income_filters, new_filter_id,
+				Object.getOwnPropertyDescriptor(this.income_filters, filter_id));
 			this.income_filters[new_filter_id].display_name = new_filter_name;
 			delete this.income_filters[filter_id];
 		}
@@ -959,7 +971,9 @@ function importValidationJSONBuckets(imported_budget, JSON_object, invalid_JSON)
 		var val = 0;
 
 		// Bucket input validation.
-		if (curr_filter.display_name == null || typeof (curr_filter.display_name) != "string") {
+		if (curr_filter.display_name == null ||
+			typeof (curr_filter.display_name) != "string") {
+
 			invalid_JSON = true;
 			name = "INVALID_JSON_BUCKET_" + i;
 		} else {
@@ -989,7 +1003,7 @@ function importValidationJSONBuckets(imported_budget, JSON_object, invalid_JSON)
  * @return {[string[],Number[]]} [bucket_ids, percentages] - The bucket IDs and percentages for the filter.
  * @module module:BucketBudget.importValidationJSONIncomeFiltersBucketPercentages()
  */
-function importValidationJSONIncomeFiltersBucketPercentages(imported_budget, curr_filter, invalid_JSON) {
+function importValidationJSONBucketPercentages(imported_budget, curr_filter, invalid_JSON) {
 	var filter_bucket_id_keys = Object.keys(curr_filter.bucket_percentages);
 	var bucket_ids = [];
 	var percentages = [];
@@ -999,13 +1013,17 @@ function importValidationJSONIncomeFiltersBucketPercentages(imported_budget, cur
 		var curr_percentage = curr_filter.bucket_percentages[curr_bucket_id];
 
 		// Verify bucket ID is valid.
-		if (typeof (curr_bucket_id) != "string" || imported_budget.buckets[curr_bucket_id] == null) {
+		if (typeof (curr_bucket_id) != "string" ||
+			imported_budget.buckets[curr_bucket_id] == null) {
+
 			invalid_JSON = true;
 			curr_bucket_id = "INVALID_JSON_INCOME_FILTER_BUCKET" + j;
 		}
 
 		// Verify percentage is valid.
-		if (typeof (curr_percentage) != "number" || curr_percentage != Number(curr_percentage.toFixed(2))) {
+		if (typeof (curr_percentage) != "number" ||
+			curr_percentage != Number(curr_percentage.toFixed(2))) {
+
 			invalid_JSON = true;
 			curr_percentage = 0.00;
 		}
@@ -1040,7 +1058,9 @@ function importValidationJSONIncomeFilters(imported_budget, JSON_object, invalid
 		var rounding_bucket = "";
 
 		// IncomeFilter display name input validation.
-		if (curr_filter.display_name == null || typeof (curr_filter.display_name) != "string") {
+		if (curr_filter.display_name == null ||
+			typeof (curr_filter.display_name) != "string") {
+
 			invalid_JSON = true;
 			name = "INVALID_JSON_INCOME_FILTER_" + i;
 		} else {
@@ -1053,7 +1073,7 @@ function importValidationJSONIncomeFilters(imported_budget, JSON_object, invalid
 			bucket_percentages["INVALID_JSON_INCOME_FILTER_BUCKET_PERCENTAGE"] = 100.00;
 		} else {
 			// Verify bucket percentages are valid.
-			var b_and_p = importValidationJSONIncomeFiltersBucketPercentages(imported_budget, curr_filter, invalid_JSON);
+			var b_and_p = importValidationJSONBucketPercentages(imported_budget, curr_filter, invalid_JSON);
 			var bucket_ids = b_and_p[0];
 			var percentages = b_and_p[1];
 		}
@@ -1081,7 +1101,8 @@ function importValidationJSONIncomeFilters(imported_budget, JSON_object, invalid
  */
 function importValidationJSONLedger(imported_budget, JSON_object, invalid_JSON) {
 	// Sort input validation.
-	if (JSON_object.ledger.sort_field == null || typeof (JSON_object.ledger.sort_field) != "string" ||
+	if (JSON_object.ledger.sort_field == null ||
+		typeof (JSON_object.ledger.sort_field) != "string" ||
 		!valid_sort_fields.includes(JSON_object.ledger.sort_field)) {
 
 		invalid_JSON = true;
@@ -1090,7 +1111,9 @@ function importValidationJSONLedger(imported_budget, JSON_object, invalid_JSON) 
 		imported_budget.ledger.sort_field = JSON_object.ledger.sort_field;
 	}
 
-	if (JSON_object.ledger.sort_dir_asc == null || typeof (JSON_object.ledger.sort_dir_asc) != "boolean") {
+	if (JSON_object.ledger.sort_dir_asc == null ||
+		typeof (JSON_object.ledger.sort_dir_asc) != "boolean") {
+
 		invalid_JSON = true;
 		imported_budget.ledger.sort_dir_asc = false;
 	} else {
@@ -1138,7 +1161,9 @@ function importValidationJSONLedger(imported_budget, JSON_object, invalid_JSON) 
 		}
 
 		// Check bucket before.
-		if (curr_transaction.bucket_before == null || typeof (curr_transaction.bucket_before) != "number") {
+		if (curr_transaction.bucket_before == null ||
+			typeof (curr_transaction.bucket_before) != "number") {
+
 			invalid_JSON = true;
 		} else {
 			curr_bucket_before = curr_transaction.bucket_before;
@@ -1152,20 +1177,24 @@ function importValidationJSONLedger(imported_budget, JSON_object, invalid_JSON) 
 		}
 
 		// Check description.
-		if (curr_transaction.description == null || typeof (curr_transaction.description) != "string") {
+		if (curr_transaction.description == null ||
+			typeof (curr_transaction.description) != "string") {
+
 			invalid_JSON = true;
 		} else {
 			curr_desc = curr_transaction.description;
 		}
 
-		imported_transactions[import_ledger_keys[i]] = new Transaction(curr_id, curr_date, curr_filter,
-			curr_desc, curr_val, curr_bucket_before)
+		imported_transactions[import_ledger_keys[i]] = new Transaction(curr_id,
+			curr_date, curr_filter, curr_desc, curr_val, curr_bucket_before);
 	}
 	imported_budget.ledger.transactions = imported_transactions;
 
 	// Check id_counter.
-	if (JSON_object.ledger.id_counter == null || typeof (JSON_object.ledger.id_counter) != "number" ||
+	if (JSON_object.ledger.id_counter == null ||
+		typeof (JSON_object.ledger.id_counter) != "number" ||
 		JSON_object.ledger.id_counter < max_id + invalid_id_counter) {
+
 		invalid_JSON = true;
 		imported_budget.ledger.id_counter = max_id + invalid_id_counter;
 	} else {
@@ -1220,7 +1249,8 @@ function importJSON(object) {
 	}
 
 	// Page validation.
-	var max_page = Math.ceil(Object.keys(imported_budget.ledger.transactions).length / imported_budget.page_size) - 1;
+	var max_page = Math.ceil(Object.keys(imported_budget.ledger.transactions).length /
+		imported_budget.page_size) - 1;
 	if (!object.page == null ||
 		typeof (object.page) != "number" ||
 		object.page < 0 || object.page > max_page) {
@@ -1380,10 +1410,12 @@ function updateBucketTable() {
 
 		// Edit and remove buttons.
 		var edit_button = document.createElement('td');
-		edit_button.innerHTML = "<button class='bucket-edit' onclick='editBucket(\"" + bucket_id + "\",this)'>Edit</button>"
+		edit_button.innerHTML = "<button class='bucket-edit' onclick='editBucket(\"" +
+			bucket_id + "\",this)'>Edit</button>"
 
 		var remove_button = document.createElement('td');
-		remove_button.innerHTML = "<button class='bucket-remove' onclick='removeBucket(\"" + bucket_id + "\")'>Remove</button>"
+		remove_button.innerHTML = "<button class='bucket-remove' onclick='removeBucket(\"" +
+			bucket_id + "\")'>Remove</button>"
 
 		// Add to table.
 		entry.appendChild(name_entry);
@@ -1454,10 +1486,12 @@ function editBucket(bucket_id, edit_button) {
 	// Get cell that bucket name is in and change to input field.
 	var cell = document.getElementById(bucket_id);
 	var curr_cell_inner = cell.innerHTML;
-	cell.innerHTML = "<input id='" + bucket_id + "_edit' type='text' Value='" + curr_cell_inner + "'>";
+	cell.innerHTML = "<input id='" + bucket_id + "_edit' type='text' Value='" +
+		curr_cell_inner + "'>";
 
 	// Add cancel button under input field.
-	cell.innerHTML += "<button id='" + bucket_id + "_cancel' onclick='cancelBucketEdit(\"" + bucket_id + "\",this)'>Cancel</button>";
+	cell.innerHTML += "<button id='" + bucket_id + "_cancel' onclick='cancelBucketEdit(\"" +
+		bucket_id + "\",this)'>Cancel</button>";
 
 	// Change this button to Submit Changes.
 	edit_button.setAttribute("id", bucket_id + "_submit");
@@ -1654,7 +1688,8 @@ function validateIncomeFilterInputs(add_or_edit) {
 		addIncomeFilter(new_filter_name, bucket_ids, percentages, rounding_bucket);
 	} else {
 		var old_filter_id = document.getElementById("new-filter-name").getAttribute("old_value");
-		confirmIncomeFilterEdit(old_filter_id, new_filter_name, bucket_ids, percentages, rounding_bucket);
+		confirmIncomeFilterEdit(old_filter_id, new_filter_name, bucket_ids,
+			percentages, rounding_bucket);
 	}
 }
 
@@ -1664,7 +1699,7 @@ function validateIncomeFilterInputs(add_or_edit) {
  * @param {string} filter_name - The name of the IncomeFilter.
  * @param {string[]} bucket_ids - The ID of each Bucket that the income will go into.
  * @param {number[]} percentages - The percentages of income to go into each bucket rounded to 2 decimal places.
- * @param {string} rounding_bucket - The ID of the bucket that will be affected by any rounding errors, positive or negative.
+ * @param {string} rounding_bucket - The ID of the bucket that will be affected by any (+ or -) rounding errors.
  * @module module:BucketBudget.addIncomeFilter()
  */
 function addIncomeFilter(new_filter_name, bucket_ids, percentages, rounding_bucket) {
@@ -1799,11 +1834,14 @@ function editIncomeFilter(edit_button) {
  * @param {string} new_filter_name - The name of the IncomeFilter.
  * @param {string[]} bucket_ids - The ID of each Bucket that the income will go into.
  * @param {number[]} percentages - The percentages of income to go into each bucket rounded to 2 decimal places.
- * @param {string} rounding_bucket - The ID of the bucket that will be affected by any rounding errors, positive or negative.
+ * @param {string} rounding_bucket - The ID of the bucket that will be affected by any (+ or -) rounding errors.
  * @module module:BucketBudget.confirmIncomeFilterEdit()
  */
-function confirmIncomeFilterEdit(filter_id, new_filter_name, bucket_ids, percentages, rounding_bucket) {
-	var success = USER_BUDGET.editIncomeFilter(filter_id, new_filter_name, bucket_ids, percentages, rounding_bucket);
+function confirmIncomeFilterEdit(filter_id, new_filter_name, bucket_ids,
+	percentages, rounding_bucket) {
+
+	var success = USER_BUDGET.editIncomeFilter(filter_id, new_filter_name,
+		bucket_ids, percentages, rounding_bucket);
 
 	// If filter name already exists or percentages dont add to 100.00, alert user.
 	if (!success) {
@@ -2010,7 +2048,8 @@ function updateLedgerTable() {
 			var button_text = header_labels[i];
 
 			if (header_labels[i].toLowerCase() == USER_BUDGET.ledger.sort_field) {
-				sort_function = "sortLedgerTable('" + header_labels[i].toLowerCase() + "'," + !USER_BUDGET.ledger.sort_dir_asc + ",this)";
+				sort_function = "sortLedgerTable('" + header_labels[i].toLowerCase() + "'," +
+					!USER_BUDGET.ledger.sort_dir_asc + ",this)";
 				button_text += USER_BUDGET.ledger.sort_dir_asc ? " v" : " ^";
 			}
 
@@ -2092,10 +2131,12 @@ function updateLedgerTable() {
 		// Edit and remove buttons won't show on bucket name change transactions.
 		if (!(transaction.date == "" && transaction.value == 0)) {
 			var edit_button = document.createElement('td');
-			edit_button.innerHTML = "<button class='transaction-edit' onclick='editTransaction(\"" + ledger_id + "\",this)'>Edit</button>"
+			edit_button.innerHTML = "<button class='transaction-edit' onclick='editTransaction(\"" +
+				ledger_id + "\",this)'>Edit</button>"
 
 			var remove_button = document.createElement('td');
-			remove_button.innerHTML = "<button class='transaction-remove' onclick='removeTransaction(\"" + ledger_id + "\")'>Remove</button>"
+			remove_button.innerHTML = "<button class='transaction-remove' onclick='removeTransaction(\"" +
+				ledger_id + "\")'>Remove</button>"
 			entry.appendChild(edit_button);
 			entry.appendChild(remove_button);
 		}
@@ -2144,7 +2185,8 @@ function sortLedgerTable(field, asc, sort_button) {
 function setLedgerPage(page_select) {
 	// Get the correct page.
 	var page = -1;
-	var max_page = Math.ceil(Object.keys(USER_BUDGET.ledger.transactions).length / USER_BUDGET.page_size) - 1;
+	var max_page = Math.ceil(Object.keys(USER_BUDGET.ledger.transactions).length /
+		USER_BUDGET.page_size) - 1;
 	switch (page_select) {
 		case 0:
 			page = 0;
@@ -2279,21 +2321,26 @@ function editTransaction(transaction_id, edit_button) {
 	// Get cells for the transaction and change them to input fields, noting original values for each field.
 	var date_cell = document.getElementById(transaction_id + "-date");
 	var date_cell_inner = date_cell.innerHTML;
-	date_cell.innerHTML = "<input id='" + transaction_id + "-date_edit' type='date' old_value='" + date_cell_inner + "' Value='" + date_cell_inner + "'>";
+	date_cell.innerHTML = "<input id='" + transaction_id + "-date_edit' type='date' old_value='" +
+		date_cell_inner + "' Value='" + date_cell_inner + "'>";
 
 	var bucket_cell = document.getElementById(transaction_id + "-bucket");
 	var bucket_cell_value = bucket_cell.innerHTML;
-	var bucket_select_options = document.getElementById("bucket-transaction-input").innerHTML.replace(">" + bucket_cell_value, "selected='true'>" + bucket_cell_value);
-	var bucket_cell_inner = "<select id='" + transaction_id + "-bucket_edit' old_value='" + bucket_cell_value + "' Value='" + bucket_cell_value + "'>";
+	var bucket_select_options = document.getElementById("bucket-transaction-input").innerHTML.replace(">" +
+		bucket_cell_value, "selected='true'>" + bucket_cell_value);
+	var bucket_cell_inner = "<select id='" + transaction_id + "-bucket_edit' old_value='" +
+		bucket_cell_value + "' Value='" + bucket_cell_value + "'>";
 	bucket_cell.innerHTML = bucket_cell_inner + bucket_select_options + "</select>";
 
 	var desc_cell = document.getElementById(transaction_id + "-description");
 	var desc_cell_inner = desc_cell.innerHTML;
-	desc_cell.innerHTML = "<input id='" + transaction_id + "-description_edit' type='text' old_value='" + desc_cell_inner + "' Value='" + desc_cell_inner + "'>";
+	desc_cell.innerHTML = "<input id='" + transaction_id + "-description_edit' type='text' old_value='" +
+		desc_cell_inner + "' Value='" + desc_cell_inner + "'>";
 
 	var value_cell = document.getElementById(transaction_id + "-value");
 	var value_cell_inner = value_cell.innerHTML.replace("$", "");
-	value_cell.innerHTML = "<input id='" + transaction_id + "-value_edit' type='number' step='0.01' old_value='" + Number(value_cell_inner) + "' Value='" + Number(value_cell_inner) + "'>";
+	value_cell.innerHTML = "<input id='" + transaction_id + "-value_edit' type='number' step='0.01' old_value='" +
+		Number(value_cell_inner) + "' Value='" + Number(value_cell_inner) + "'>";
 
 	// Add cancel button under input field.
 	var cancel_button = document.createElement("button")
@@ -2373,7 +2420,8 @@ function confirmTransactionEdit(transaction_id) {
 		return;
 	}
 
-	USER_BUDGET.editTransaction(new_transaction_date, new_transaction_bucket, new_transaction_desc, new_transaction_value, transaction_id);
+	USER_BUDGET.editTransaction(new_transaction_date, new_transaction_bucket,
+		new_transaction_desc, new_transaction_value, transaction_id);
 
 	// Propagate changes to bucket table.
 	updateBucketTable();
