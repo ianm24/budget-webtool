@@ -1,10 +1,7 @@
-#second-row {
-	display: flex;
-}
-
-#bucket-section {
-	width: min-content;
-	margin-right: 1%;
+body {
+	margin: auto;
+	width: fit-content;
+	max-width: 800px;
 }
 
 select {
@@ -34,4 +31,13 @@ th {
 
 tr:nth-child(even) {
 	background-color: #dddddd;
+}
+
+#second-row {
+	display: flex;
+}
+
+#bucket-section {
+	width: min-content;
+	margin-right: 1%;
 }
