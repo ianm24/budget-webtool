@@ -3,6 +3,18 @@
 <dl>
 <dt><a href="#module_BucketBudget">BucketBudget</a></dt>
 <dd></dd>
+<dt><a href="#BucketBudget.module_importValidationJSONBuckets_new">importValidationJSONBuckets()</a></dt>
+<dd><p>Validates imported JSON buckets and adds them to the imported_budget.</p>
+</dd>
+<dt><a href="#BucketBudget.module_importValidationJSONIncomeFiltersBucketPercentages_new">importValidationJSONIncomeFiltersBucketPercentages()</a> ⇒ <code>Object</code></dt>
+<dd><p>Validates imported JSON income filter bucket percentages.</p>
+</dd>
+<dt><a href="#BucketBudget.module_importValidationJSONIncomeFilters_new">importValidationJSONIncomeFilters()</a></dt>
+<dd><p>Validates imported JSON income filters and adds them to the imported_budget.</p>
+</dd>
+<dt><a href="#BucketBudget.module_importValidationJSONLedger_new">importValidationJSONLedger()</a></dt>
+<dd><p>Validates imported JSON ledger and adds it to the imported_budget.</p>
+</dd>
 <dt><a href="#BucketBudget.module_importJSON_new">importJSON()</a> ⇒ <code>bool</code></dt>
 <dd><p>Imports a budget from a JSON object.</p>
 </dd>
@@ -146,7 +158,7 @@ Takes the new values for the transaction and changes it in USER_BUDGET if the fi
         * [.removeTransaction(ledger_id)](#module_BucketBudget..Ledger+removeTransaction) ⇒ <code>number</code>
         * [.editTransaction(ledger_id, new_transaction)](#module_BucketBudget..Ledger+editTransaction) ⇒ <code>number</code>
         * [.sortLedger([field], [asc])](#module_BucketBudget..Ledger+sortLedger)
-        * [.setLedgerSortParams(field, asc)](#module_BucketBudget..Ledger+setLedgerSortParams) ⇒ <code>any</code>
+        * [.setLedgerSortParams(field, asc)](#module_BucketBudget..Ledger+setLedgerSortParams) ⇒ <code>boolean</code>
         * [.getAdjacentTransactions(ledger_id)](#module_BucketBudget..Ledger+getAdjacentTransactions) ⇒ <code>Array.&lt;string&gt;</code>
         * [.updateLedger(ledger_id)](#module_BucketBudget..Ledger+updateLedger) ⇒ <code>number</code>
         * [.updateBucketName(bucket, new_bucket_id, new_bucket_name)](#module_BucketBudget..Ledger+updateBucketName)
@@ -175,7 +187,7 @@ Takes the new values for the transaction and changes it in USER_BUDGET if the fi
         * [.removeTransaction(transaction_id)](#module_BucketBudget..Budget+removeTransaction) ⇒ <code>boolean</code>
         * [.editTransaction(date, bucket, description, value, transaction_id)](#module_BucketBudget..Budget+editTransaction) ⇒ <code>boolean</code>
         * [.sortLedger()](#module_BucketBudget..Budget+sortLedger) ⇒ <code>boolean</code>
-        * [.setLedgerSortParams(sort_field, sort_dir_asc)](#module_BucketBudget..Budget+setLedgerSortParams) ⇒ <code>any</code>
+        * [.setLedgerSortParams(sort_field, sort_dir_asc)](#module_BucketBudget..Budget+setLedgerSortParams) ⇒ <code>boolean</code>
         * [.setLedgerPage(page)](#module_BucketBudget..Budget+setLedgerPage) ⇒ <code>boolean</code>
         * [.setLedgerPageSize(page)](#module_BucketBudget..Budget+setLedgerPageSize) ⇒ <code>boolean</code>
     * [~exportDataFile](#module_BucketBudget..exportDataFile) : <code>string</code>
@@ -279,7 +291,8 @@ Date the transaction occurred in YYYY-MM-DD format.
 <a name="module_BucketBudget..Transaction+bucket"></a>
 
 #### transaction.bucket : <code>string</code>
-The bucket this transaction is in. Budget.buckets is used to get the Bucket object associated with this.
+The bucket this transaction is in.
+Budget.buckets is used to get the Bucket object associated with this.
 
 **Kind**: instance property of [<code>Transaction</code>](#module_BucketBudget..Transaction)  
 <a name="module_BucketBudget..Transaction+description"></a>
@@ -313,7 +326,8 @@ Returns comparison of transactions by a numerical field.
 (-1)^(1+asc) * a + (-1)^(asc) * b = {a-b if asc=true; b-a if asc=false}
 
 **Kind**: static method of [<code>Transaction</code>](#module_BucketBudget..Transaction)  
-**Returns**: <code>number</code> - Numerical sort value that is negative if a < b, 0 if a=b, positive if a > b (pos and neg switch if asc is false).  
+**Returns**: <code>number</code> - Numerical sort value that is negative if a < b, 0 if a=b, positive if a > b
+(pos and neg switch if asc is false).  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -328,7 +342,8 @@ Returns comparison of transactions by a numerical field.
 Returns comparison of transaction dates and ids.
 
 **Kind**: static method of [<code>Transaction</code>](#module_BucketBudget..Transaction)  
-**Returns**: <code>number</code> - Numerical sort value that is negative if a < b, 0 if a=b, positive if a > b (pos and neg switch if asc is false).  
+**Returns**: <code>number</code> - Numerical sort value that is negative if a < b, 0 if a=b, positive if a > b
+(pos and neg switch if asc is false).  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -342,7 +357,8 @@ Returns comparison of transaction dates and ids.
 Returns alphabetic comparison of transaction buckets.
 
 **Kind**: static method of [<code>Transaction</code>](#module_BucketBudget..Transaction)  
-**Returns**: <code>number</code> - Numerical sort value that is negative if a < b, 0 if a=b, positive if a > b (pos and neg switch if asc is false).  
+**Returns**: <code>number</code> - Numerical sort value that is negative if a < b, 0 if a=b, positive if a > b
+(pos and neg switch if asc is false).  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -365,7 +381,7 @@ Returns alphabetic comparison of transaction buckets.
     * [.removeTransaction(ledger_id)](#module_BucketBudget..Ledger+removeTransaction) ⇒ <code>number</code>
     * [.editTransaction(ledger_id, new_transaction)](#module_BucketBudget..Ledger+editTransaction) ⇒ <code>number</code>
     * [.sortLedger([field], [asc])](#module_BucketBudget..Ledger+sortLedger)
-    * [.setLedgerSortParams(field, asc)](#module_BucketBudget..Ledger+setLedgerSortParams) ⇒ <code>any</code>
+    * [.setLedgerSortParams(field, asc)](#module_BucketBudget..Ledger+setLedgerSortParams) ⇒ <code>boolean</code>
     * [.getAdjacentTransactions(ledger_id)](#module_BucketBudget..Ledger+getAdjacentTransactions) ⇒ <code>Array.&lt;string&gt;</code>
     * [.updateLedger(ledger_id)](#module_BucketBudget..Ledger+updateLedger) ⇒ <code>number</code>
     * [.updateBucketName(bucket, new_bucket_id, new_bucket_name)](#module_BucketBudget..Ledger+updateBucketName)
@@ -448,16 +464,16 @@ Sorts the transactions dictionary by a field in ascending or descending order.
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| [field] | <code>any</code> | <code>this.sort_field</code> | The field to sort the ledger by. |
-| [asc] | <code>any</code> | <code>this.sort_dir_asc</code> | True if ledger sorted in ascending order, false otherwise. |
+| [field] | <code>string</code> | <code>&quot;this.sort_field&quot;</code> | The field to sort the ledger by. |
+| [asc] | <code>boolean</code> | <code>this.sort_dir_asc</code> | True if ledger sorted in ascending order, false otherwise. |
 
 <a name="module_BucketBudget..Ledger+setLedgerSortParams"></a>
 
-#### ledger.setLedgerSortParams(field, asc) ⇒ <code>any</code>
+#### ledger.setLedgerSortParams(field, asc) ⇒ <code>boolean</code>
 Sets the sorting parameters of the ledger.
 
 **Kind**: instance method of [<code>Ledger</code>](#module_BucketBudget..Ledger)  
-**Returns**: <code>any</code> - False if field or parameter types are invalid, true otherwise.  
+**Returns**: <code>boolean</code> - False if field or parameter types are invalid, true otherwise.  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -470,7 +486,8 @@ Sets the sorting parameters of the ledger.
 Given a transaction, finds the transactions before and after it within the same bucket.
 
 **Kind**: instance method of [<code>Ledger</code>](#module_BucketBudget..Ledger)  
-**Returns**: <code>Array.&lt;string&gt;</code> - [before_id,after_id] - The ledger IDs (keys) of the transactions before and after within the associated bucket.
+**Returns**: <code>Array.&lt;string&gt;</code> - [before_id,after_id] -
+The ledger IDs (keys) of the transactions before and after within the associated bucket.
 The before_id will be ledger_id if the transaction is the first in the bucket.
 The after_id will be ledger_id if the transaction is the last in the bucket.  
 
@@ -500,8 +517,8 @@ Goes through each transaction in the ledger and updates the bucket if applicable
 | Param | Type | Description |
 | --- | --- | --- |
 | bucket | <code>Bucket</code> | The bucket existing transactions are in. |
-| new_bucket_id | <code>any</code> | The new ID for the bucket. |
-| new_bucket_name | <code>any</code> | The new display name for the bucket |
+| new_bucket_id | <code>string</code> | The new ID for the bucket. |
+| new_bucket_name | <code>string</code> | The new display name for the bucket |
 
 <a name="module_BucketBudget..IncomeFilter"></a>
 
@@ -529,7 +546,7 @@ Creates empty IncomeFilter if parameters invalid or not given.
 | display_name | <code>string</code> |  | The display name of the IncomeFilter. This will be used as the description for transactions added using the filter. |
 | [bucket_ids] | <code>Array.&lt;string&gt;</code> | <code>[]</code> | The ID of each Bucket that the income will go into. bucket_ids[i] should correspond with percentages[i]. |
 | [percentages] | <code>Array.&lt;number&gt;</code> | <code>[]</code> | The percentages of income to go into each bucket rounded to 2 decimal places. percentages[i] should correspond with bucket_ids[i]. |
-| rounding_bucket | <code>string</code> |  | The ID of the bucket that will be affected by any rounding errors, positive or negative. |
+| rounding_bucket | <code>string</code> |  | The ID of the bucket that will be affected by any (+ or -) rounding errors. |
 
 <a name="module_BucketBudget..IncomeFilter+display_name"></a>
 
@@ -556,7 +573,8 @@ The ID of the bucket that will be affected by any rounding errors, positive or n
 Sets percentages to the filter.
 
 **Kind**: instance method of [<code>IncomeFilter</code>](#module_BucketBudget..IncomeFilter)  
-**Returns**: <code>boolean</code> - False if percentages don't add to 100.00 or bucket_ids.length != percentages.length, True otherwise.  
+**Returns**: <code>boolean</code> - False if percentages don't add to 100.00 or
+bucket_ids.length != percentages.length, True otherwise.  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -573,7 +591,7 @@ Sets the rounding bucket
 
 | Param | Type | Description |
 | --- | --- | --- |
-| rounding_bucket | <code>string</code> | The ID of the bucket that will be affected by any rounding errors, positive or negative. |
+| rounding_bucket | <code>string</code> | The ID of the bucket that will be affected by any (+ or -) rounding errors. |
 
 <a name="module_BucketBudget..IncomeFilter+updateBucketName"></a>
 
@@ -609,7 +627,7 @@ Goes through each percentage in the filter and updates the bucket if applicable.
     * [.removeTransaction(transaction_id)](#module_BucketBudget..Budget+removeTransaction) ⇒ <code>boolean</code>
     * [.editTransaction(date, bucket, description, value, transaction_id)](#module_BucketBudget..Budget+editTransaction) ⇒ <code>boolean</code>
     * [.sortLedger()](#module_BucketBudget..Budget+sortLedger) ⇒ <code>boolean</code>
-    * [.setLedgerSortParams(sort_field, sort_dir_asc)](#module_BucketBudget..Budget+setLedgerSortParams) ⇒ <code>any</code>
+    * [.setLedgerSortParams(sort_field, sort_dir_asc)](#module_BucketBudget..Budget+setLedgerSortParams) ⇒ <code>boolean</code>
     * [.setLedgerPage(page)](#module_BucketBudget..Budget+setLedgerPage) ⇒ <code>boolean</code>
     * [.setLedgerPageSize(page)](#module_BucketBudget..Budget+setLedgerPageSize) ⇒ <code>boolean</code>
 
@@ -684,7 +702,7 @@ Edits an existing bucket in the dictionary and updates transactions in ledger to
 | Param | Type | Description |
 | --- | --- | --- |
 | bucket_id | <code>string</code> | The bucket ID (key) of the bucket to edit. |
-| new_bucket_name | <code>any</code> | New display name for the bucket. |
+| new_bucket_name | <code>string</code> | New display name for the bucket. |
 
 <a name="module_BucketBudget..Budget+addIncomeFilter"></a>
 
@@ -701,7 +719,7 @@ or filter_name is duplicate, True otherwise.
 | filter_name | <code>string</code> | The name of the IncomeFilter. |
 | bucket_ids | <code>Array.&lt;string&gt;</code> | The ID of each Bucket that the income will go into. bucket_ids[i] should correspond with percentages[i]. |
 | percentages | <code>Array.&lt;number&gt;</code> | The percentages of income to go into each bucket rounded to 2 decimal places. percentages[i] should correspond with bucket_ids[i]. |
-| rounding_bucket | <code>string</code> | The ID of the bucket that will be affected by any rounding errors, positive or negative. |
+| rounding_bucket | <code>string</code> | The ID of the bucket that will be affected by any (+ or -) rounding errors. |
 
 <a name="module_BucketBudget..Budget+removeIncomeFilter"></a>
 
@@ -730,7 +748,7 @@ bucket_ids are not present within the budget, or filter_name is duplicate, True 
 | new_filter_name | <code>string</code> | The name of the IncomeFilter. |
 | bucket_ids | <code>Array.&lt;string&gt;</code> | The ID of each Bucket that the income will go into. bucket_ids[i] should correspond with percentages[i]. |
 | percentages | <code>Array.&lt;number&gt;</code> | The percentages of income to go into each bucket rounded to 2 decimal places. percentages[i] should correspond with bucket_ids[i]. |
-| rounding_bucket | <code>string</code> | The ID of the bucket that will be affected by any rounding errors, positive or negative. |
+| rounding_bucket | <code>string</code> | The ID of the bucket that will be affected by any (+ or -) rounding errors. |
 
 <a name="module_BucketBudget..Budget+addTransaction"></a>
 
@@ -784,11 +802,11 @@ Sorts the ledger by its sorting parameters.
 **Returns**: <code>boolean</code> - Returns true after sorting the ledger.  
 <a name="module_BucketBudget..Budget+setLedgerSortParams"></a>
 
-#### budget.setLedgerSortParams(sort_field, sort_dir_asc) ⇒ <code>any</code>
+#### budget.setLedgerSortParams(sort_field, sort_dir_asc) ⇒ <code>boolean</code>
 Sets the sorting parameters of the ledger.
 
 **Kind**: instance method of [<code>Budget</code>](#module_BucketBudget..Budget)  
-**Returns**: <code>any</code> - False if field or parameter types are invalid, true otherwise.  
+**Returns**: <code>boolean</code> - False if field or parameter types are invalid, true otherwise.  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -810,7 +828,6 @@ Sets the ledger page.
 <a name="module_BucketBudget..Budget+setLedgerPageSize"></a>
 
 #### budget.setLedgerPageSize(page) ⇒ <code>boolean</code>
-TODO
 Sets the ledger page size.
 
 **Kind**: instance method of [<code>Budget</code>](#module_BucketBudget..Budget)  
@@ -850,6 +867,55 @@ The file types currently supported by the import functions.
 Formats numbers to currency for proper display.
 
 **Kind**: inner constant of [<code>BucketBudget</code>](#module_BucketBudget)  
+<a name="BucketBudget.module_importValidationJSONBuckets_new"></a>
+
+## importValidationJSONBuckets()
+Validates imported JSON buckets and adds them to the imported_budget.
+
+
+| Param | Type | Description |
+| --- | --- | --- |
+| imported_budget | <code>Budget</code> | The constructed budget to add buckets to. |
+| JSON_object | <code>Object</code> | The imported JSON Object. |
+| invalid_JSON | <code>boolean</code> | Value to keep track of any JSON malformities. |
+
+<a name="BucketBudget.module_importValidationJSONIncomeFiltersBucketPercentages_new"></a>
+
+## importValidationJSONIncomeFiltersBucketPercentages() ⇒ <code>Object</code>
+Validates imported JSON income filter bucket percentages.
+
+**Returns**: <code>Object</code> - [bucket_ids, percentages] - The bucket IDs and percentages for the filter.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| imported_budget | <code>Budget</code> | The constructed budget so far. |
+| curr_filter | <code>Object</code> | JSON object containing unvalidated filter. |
+| invalid_JSON | <code>boolean</code> | Value to keep track of any JSON malformities. |
+
+<a name="BucketBudget.module_importValidationJSONIncomeFilters_new"></a>
+
+## importValidationJSONIncomeFilters()
+Validates imported JSON income filters and adds them to the imported_budget.
+
+
+| Param | Type | Description |
+| --- | --- | --- |
+| imported_budget | <code>Budget</code> | The constructed budget to add filters to. |
+| JSON_object | <code>Object</code> | The imported JSON Object. |
+| invalid_JSON | <code>boolean</code> | Value to keep track of any JSON malformities. |
+
+<a name="BucketBudget.module_importValidationJSONLedger_new"></a>
+
+## importValidationJSONLedger()
+Validates imported JSON ledger and adds it to the imported_budget.
+
+
+| Param | Type | Description |
+| --- | --- | --- |
+| imported_budget | <code>Budget</code> | The constructed budget to add ledger to. |
+| JSON_object | <code>Object</code> | The imported JSON Object. |
+| invalid_JSON | <code>boolean</code> | Value to keep track of any JSON malformities. |
+
 <a name="BucketBudget.module_importJSON_new"></a>
 
 ## importJSON() ⇒ <code>bool</code>
@@ -973,7 +1039,7 @@ Takes the name of the filter, buckets, and percentages and adds an income filter
 | filter_name | <code>string</code> | The name of the IncomeFilter. |
 | bucket_ids | <code>Array.&lt;string&gt;</code> | The ID of each Bucket that the income will go into. |
 | percentages | <code>Array.&lt;number&gt;</code> | The percentages of income to go into each bucket rounded to 2 decimal places. |
-| rounding_bucket | <code>string</code> | The ID of the bucket that will be affected by any rounding errors, positive or negative. |
+| rounding_bucket | <code>string</code> | The ID of the bucket that will be affected by any (+ or -) rounding errors. |
 
 <a name="BucketBudget.module_removeIncomeFilter_new"></a>
 
@@ -1005,7 +1071,7 @@ Attempts to make the changes to the income filter in USER_BUDGET if they are val
 | new_filter_name | <code>string</code> | The name of the IncomeFilter. |
 | bucket_ids | <code>Array.&lt;string&gt;</code> | The ID of each Bucket that the income will go into. |
 | percentages | <code>Array.&lt;number&gt;</code> | The percentages of income to go into each bucket rounded to 2 decimal places. |
-| rounding_bucket | <code>string</code> | The ID of the bucket that will be affected by any rounding errors, positive or negative. |
+| rounding_bucket | <code>string</code> | The ID of the bucket that will be affected by any (+ or -) rounding errors. |
 
 <a name="BucketBudget.module_incomeFilterCheck_new"></a>
 

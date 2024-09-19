@@ -1000,7 +1000,7 @@ function importValidationJSONBuckets(imported_budget, JSON_object, invalid_JSON)
  * @param {Budget} imported_budget - The constructed budget so far.
  * @param {Object} curr_filter - JSON object containing unvalidated filter.
  * @param {boolean} invalid_JSON - Value to keep track of any JSON malformities.
- * @return {[string[],Number[]]} [bucket_ids, percentages] - The bucket IDs and percentages for the filter.
+ * @return {Object} [bucket_ids, percentages] - The bucket IDs and percentages for the filter.
  * @module module:BucketBudget.importValidationJSONIncomeFiltersBucketPercentages()
  */
 function importValidationJSONBucketPercentages(imported_budget, curr_filter, invalid_JSON) {
@@ -2468,4 +2468,4 @@ var exportDataFile = null;
  */
 var USER_BUDGET = new Budget();
 
-// ===End Constands and Variables===
+// ===End Constants and Variables===
