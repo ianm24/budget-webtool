@@ -1251,6 +1251,10 @@ function importJSON(object) {
 	// Page validation.
 	var max_page = Math.ceil(Object.keys(imported_budget.ledger.transactions).length /
 		imported_budget.page_size) - 1;
+	if (imported_budget.page_size == -1) {
+		max_page = 0;
+	}
+	
 	if (!object.page == null ||
 		typeof (object.page) != "number" ||
 		object.page < 0 || object.page > max_page) {
