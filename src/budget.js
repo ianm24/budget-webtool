@@ -1254,7 +1254,7 @@ function importJSON(object) {
 	if (imported_budget.page_size == -1) {
 		max_page = 0;
 	}
-	
+
 	if (!object.page == null ||
 		typeof (object.page) != "number" ||
 		object.page < 0 || object.page > max_page) {
@@ -1281,6 +1281,99 @@ function exportJSON(budget) {
 	}
 
 	exportDataFile = window.URL.createObjectURL(data);
+}
+
+/**
+ * Exports a report of the budget to a CSV file and creates an object URL for it, saving it in exportDataFile.
+ * @param {Budget} budget - The Budget to create a report from.
+ * @module module:BucketBudget.exportReportCSV()
+ */
+function exportReportCSV(budget) {
+
+	// Get relavent statistics for report
+	// [total_in,total_out,num_transact_in,num_transact_out,avg_in,avg_out,max_in,max_out,min_in,min_out]
+	var bucket_stats = {};
+	var overall_stats = Array(10).fill(0.0);
+	var total_in_idx = 0;	var total_out_idx = 1;
+	var num_transact_in_idx = 2;	var num_transact_out_idx = 3;
+	var avg_in_idx = 4;	var avg_out_idx = 5;
+	var max_in_idx = 6; var max_out_idx = 7;
+	var min_in_idx = 8; var min_out_idx = 9;
+
+	for(var key of Object.keys(budget.buckets)) {
+		bucket_stats[key] = Array(10).fill(0.0);
+	}
+
+	var transactions = budget.ledger.transactions;
+	
+	// Get transaction totals
+	for(var key of Object.keys(transactions)) {
+		var transaction = transactions[key];
+		var bucket = transaction.bucket;
+		var abs_price = Math.abs(transaction.value)
+
+		var in_or_out = transaction.value >= 0 ? 0 : 1;
+		var total_in_or_out =  total_in_idx + in_or_out;
+		var num_transact_in_or_out = num_transact_in_idx + in_or_out;
+		var max_in_or_out =  max_in_idx + in_or_out;
+		var min_in_or_out =  min_in_idx + in_or_out;
+		
+
+		overall_stats[total_in_or_out] = Number((overall_stats[total_in_or_out] + abs_price).toFixed(2));
+		overall_stats[num_transact_in_or_out]++;
+		abs_price > overall_stats[max_in_or_out] ? overall_stats[max_in_or_out] = abs_price : null;
+		abs_price < overall_stats[min_in_or_out] ? overall_stats[min_in_or_out] = abs_price : null;
+
+		bucket_stats[bucket][total_in_or_out] = Number((bucket_stats[bucket][total_in_or_out] + abs_price).toFixed(2));
+		bucket_stats[bucket][num_transact_in_or_out]++;
+		abs_price > bucket_stats[bucket][max_in_or_out] ? bucket_stats[bucket][max_in_or_out] = abs_price : null;
+		abs_price < bucket_stats[bucket][min_in_or_out] ? bucket_stats[bucket][min_in_or_out] = abs_price : null;
+	}
+
+	// Calculate averages
+	overall_stats[avg_in_idx] = Number((overall_stats[total_in_idx]/overall_stats[num_transact_in_idx]).toFixed(2));
+	overall_stats[avg_out_idx] = Number((overall_stats[total_out_idx]/overall_stats[num_transact_out_idx]).toFixed(2));
+
+	for(var bucket of Object.keys(bucket_stats)) {
+		bucket_stats[bucket][avg_in_idx] = Number(
+			(bucket_stats[bucket][total_in_idx]/bucket_stats[bucket][num_transact_in_idx]).toFixed(2));
+		bucket_stats[bucket][avg_out_idx] = Number(
+			(bucket_stats[bucket][total_out_idx]/bucket_stats[bucket][num_transact_out_idx]).toFixed(2));
+	}
+
+	// Put stats into csv rows
+	var csv_rows = [
+		["Bucket","Total Income","Total Spending","Income Transactions","Spending Transactions",
+			"Average Income","Average Spending","Max Income","Max Spending","Min Income","Min Spending"
+		],
+		["All Buckets", overall_stats[total_in_idx], overall_stats[total_out_idx], overall_stats[num_transact_in_idx],
+			overall_stats[num_transact_out_idx], isNaN(overall_stats[avg_in_idx]) ? "N/A" : overall_stats[avg_in_idx],
+			isNaN(overall_stats[avg_out_idx]) ? "N/A" : overall_stats[avg_out_idx], overall_stats[max_in_idx],
+			overall_stats[max_out_idx], overall_stats[min_in_idx], overall_stats[min_out_idx]]
+	];
+
+	for(var bucket of Object.keys(bucket_stats)) {
+		var bucket_row = [
+			budget.buckets[bucket].display_name, bucket_stats[bucket][total_in_idx],
+			bucket_stats[bucket][total_out_idx], bucket_stats[bucket][num_transact_in_idx],
+			bucket_stats[bucket][num_transact_out_idx],
+			isNaN(bucket_stats[bucket][avg_in_idx]) ? "N/A" : bucket_stats[bucket][avg_in_idx],
+			isNaN(bucket_stats[bucket][avg_out_idx]) ? "N/A" : bucket_stats[bucket][avg_out_idx],
+			bucket_stats[bucket][max_in_idx], bucket_stats[bucket][max_out_idx], bucket_stats[bucket][min_in_idx],
+			bucket_stats[bucket][min_out_idx]
+		];
+		csv_rows.push(bucket_row);
+	}
+
+	// Put rows into data Blob
+	const data = "data:text/csv;charset=utf-8," + csv_rows.map(e => e.join(",")).join("\n");
+
+	// If replacing previous file, revoke object URL to avoid memory leaks.
+	if (exportDataFile !== null) {
+		window.URL.revokeObjectURL(exportDataFile);
+	}
+
+	exportDataFile = encodeURI(data);
 }
 
 // ===End File Import/Export Functions===
@@ -1367,6 +1460,29 @@ function exportData(filetype) {
 	// Click the object URL link to download.
 	var link = document.createElement('a');
 	link.setAttribute('download', 'budget.' + filetype);
+	link.href = exportDataFile;
+	link.click();
+}
+
+/**
+ * Runs when report export button is pressed.
+ * Exports report of USER_BUDGET and downloads it to the user's machine.
+ * @param {string} filetype - The file extension for the exported report, decided by the export button.
+ * @module module:BucketBudget.exportReport()
+ */
+function exportReport(filetype) {
+	// Set object URL for the current budget.
+	switch (filetype) {
+		case 'csv':
+			exportReportCSV(USER_BUDGET);
+			break;
+		// TODO allow csv export.
+	}
+
+	// Click the object URL link to download.
+	var curr_date = (new Date()).toLocaleDateString('en-US').replaceAll("/","");
+	var link = document.createElement('a');
+	link.setAttribute('download', 'budget_report_' + curr_date + "." + filetype);
 	link.href = exportDataFile;
 	link.click();
 }
